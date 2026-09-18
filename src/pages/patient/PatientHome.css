@@ -145,6 +145,16 @@
   font-size: 0.98rem;
 }
 
+.home-feedback {
+  margin: 10px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.94rem;
+}
+
+.home-feedback--error {
+  color: #a33f3f;
+}
+
 .today-status strong {
   color: var(--color-text);
   font-weight: 700;
@@ -172,8 +182,13 @@
 }
 
 .latest-reading time {
-  display: block;
-  margin-top: 8px;
+  color: inherit;
+}
+
+.latest-reading__context {
+  margin: 10px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
 }
 
 .records-link {

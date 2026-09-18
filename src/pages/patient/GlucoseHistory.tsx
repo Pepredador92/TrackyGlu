@@ -2,49 +2,9 @@ import { ArrowLeft, Clock3, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getReadings } from '../../services/glucose/glucoseService'
-import type { GlucoseMeasurementContext, GlucoseReading } from '../../types/glucose'
+import { GLUCOSE_CONTEXT_LABELS, formatReadingDay, formatReadingTime, getLocalDayKey } from '../../utils/glucose'
+import type { GlucoseReading } from '../../types/glucose'
 import './GlucoseHistory.css'
-
-const CONTEXT_LABELS: Record<GlucoseMeasurementContext, string> = {
-  fasting_morning: 'Ayuno',
-  pre_meal: 'Antes de comer',
-  post_meal_2h: '2 horas después de comer',
-  other: 'Otro',
-}
-
-const dateFormatter = new Intl.DateTimeFormat('es-MX', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-})
-
-const timeFormatter = new Intl.DateTimeFormat('es-MX', {
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-})
-
-function getLocalDayKey(timestamp: string): string {
-  const date = new Date(timestamp)
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
-}
-
-function getDayLabel(timestamp: string): string {
-  const date = new Date(timestamp)
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(today.getDate() - 1)
-
-  if (getLocalDayKey(timestamp) === getLocalDayKey(today.toISOString())) {
-    return 'Hoy'
-  }
-
-  if (getLocalDayKey(timestamp) === getLocalDayKey(yesterday.toISOString())) {
-    return 'Ayer'
-  }
-
-  return dateFormatter.format(date)
-}
 
 function groupReadingsByDay(readings: GlucoseReading[]): Array<[string, GlucoseReading[]]> {
   const groups = new Map<string, GlucoseReading[]>()
@@ -130,7 +90,7 @@ function GlucoseHistory() {
           <div className="history-groups">
             {groupedReadings.map(([dayKey, dayReadings]) => (
               <section className="history-group" key={dayKey} aria-labelledby={`history-day-${dayKey}`}>
-                <h2 id={`history-day-${dayKey}`}>{getDayLabel(dayReadings[0].timestamp)}</h2>
+                <h2 id={`history-day-${dayKey}`}>{formatReadingDay(dayReadings[0].timestamp)}</h2>
                 <div className="history-group__readings">
                   {dayReadings.map((reading) => <GlucoseReadingItem key={reading.id} reading={reading} />)}
                 </div>
@@ -148,8 +108,6 @@ function GlucoseHistory() {
 }
 
 function GlucoseReadingItem({ reading }: { reading: GlucoseReading }) {
-  const readingDate = new Date(reading.timestamp)
-
   return (
     <article className="reading-item">
       <div className="reading-item__value">
@@ -157,10 +115,10 @@ function GlucoseReadingItem({ reading }: { reading: GlucoseReading }) {
         <span>{reading.unit}</span>
       </div>
       <div className="reading-item__details">
-        <span>{CONTEXT_LABELS[reading.measurementContext]}</span>
+        <span>{GLUCOSE_CONTEXT_LABELS[reading.measurementContext]}</span>
         <span className="reading-item__time">
           <Clock3 size={15} strokeWidth={1.9} aria-hidden="true" />
-          <time dateTime={reading.timestamp}>{timeFormatter.format(readingDate)}</time>
+          <time dateTime={reading.timestamp}>{formatReadingTime(reading.timestamp)}</time>
         </span>
       </div>
     </article>

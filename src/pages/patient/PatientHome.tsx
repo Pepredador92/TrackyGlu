@@ -1,19 +1,52 @@
 import { Clock3, History, Plus, UserRound } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { getReadings } from '../../services/glucose/glucoseService'
+import type { GlucoseReading } from '../../types/glucose'
+import { GLUCOSE_CONTEXT_LABELS, formatReadingDateTime, isToday } from '../../utils/glucose'
 import './PatientHome.css'
 
-const MOCK_TODAY_READINGS = {
-  completed: 2,
-  total: 3,
-}
-
-const MOCK_LATEST_READING = {
-  value: 124,
-  unit: 'mg/dL',
-  time: '14:30',
-}
-
 function PatientHome() {
+  const [readings, setReadings] = useState<GlucoseReading[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
+
+  useEffect(() => {
+    let isCurrent = true
+
+    async function loadReadings() {
+      setIsLoading(true)
+      setHasError(false)
+
+      try {
+        const storedReadings = await getReadings()
+        if (isCurrent) {
+          setReadings(storedReadings)
+        }
+      } catch {
+        if (isCurrent) {
+          setHasError(true)
+        }
+      } finally {
+        if (isCurrent) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadReadings()
+
+    return () => {
+      isCurrent = false
+    }
+  }, [])
+
+  const validReadings = readings
+    .filter((reading) => !Number.isNaN(new Date(reading.timestamp).getTime()))
+    .sort((first, second) => new Date(second.timestamp).getTime() - new Date(first.timestamp).getTime())
+  const todayReadings = validReadings.filter((reading) => isToday(reading.timestamp))
+  const latestReading = validReadings[0]
+
   return (
     <main className="patient-home">
       <div className="patient-home__container">
@@ -39,10 +72,12 @@ function PatientHome() {
             <h2 id="today-status-title">Hoy</h2>
             <span className="status-indicator" aria-hidden="true" />
           </div>
-          <p>
-            <strong>{MOCK_TODAY_READINGS.completed} de {MOCK_TODAY_READINGS.total}</strong>{' '}
-            lecturas registradas
-          </p>
+          {isLoading && <p className="home-feedback" role="status">Cargando registros...</p>}
+          {!isLoading && hasError && <p className="home-feedback home-feedback--error" role="alert">No fue posible cargar tus registros.</p>}
+          {!isLoading && !hasError && todayReadings.length === 0 && <p>Aún no has registrado lecturas hoy.</p>}
+          {!isLoading && !hasError && todayReadings.length > 0 && (
+            <p><strong>{todayReadings.length}</strong> {todayReadings.length === 1 ? 'lectura registrada hoy' : 'lecturas registradas hoy'}</p>
+          )}
         </section>
 
         <section className="latest-reading" aria-labelledby="latest-reading-title">
@@ -50,17 +85,27 @@ function PatientHome() {
             <h2 id="latest-reading-title">Última lectura</h2>
             <Clock3 size={19} strokeWidth={1.8} aria-hidden="true" />
           </div>
-          <div className="latest-reading__value">
-            <strong>{MOCK_LATEST_READING.value}</strong>
-            <span>{MOCK_LATEST_READING.unit}</span>
-          </div>
-          <time dateTime="14:30">{MOCK_LATEST_READING.time}</time>
+          {isLoading && <p className="home-feedback" role="status">Cargando registros...</p>}
+          {!isLoading && hasError && <p className="home-feedback home-feedback--error" role="alert">No fue posible cargar tus registros.</p>}
+          {!isLoading && !hasError && !latestReading && <p>Aún no hay lecturas registradas.</p>}
+          {!isLoading && !hasError && latestReading && (
+            <>
+              <div className="latest-reading__value">
+                <strong>{latestReading.glucoseValue}</strong>
+                <span>{latestReading.unit}</span>
+              </div>
+              <p className="latest-reading__context">
+                {GLUCOSE_CONTEXT_LABELS[latestReading.measurementContext]}{' · '}
+                <time dateTime={latestReading.timestamp}>{formatReadingDateTime(latestReading.timestamp)}</time>
+              </p>
+            </>
+          )}
         </section>
 
-        <a className="records-link" href="/mis-registros">
+        <Link className="records-link" to="/mis-registros">
           <History size={18} strokeWidth={1.9} aria-hidden="true" />
           <span>Ver mis registros</span>
-        </a>
+        </Link>
       </div>
     </main>
   )
