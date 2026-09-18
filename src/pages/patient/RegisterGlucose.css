@@ -1,0 +1,301 @@
+.register-glucose {
+  min-height: 100vh;
+  padding: 0 20px 48px;
+}
+
+.register-glucose__container {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.register-glucose__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 76px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.register-glucose__brand {
+  color: var(--color-text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.back-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-primary);
+  font-size: 0.96rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.register-glucose__intro {
+  padding: 42px 0 30px;
+}
+
+.register-glucose__eyebrow {
+  margin: 0 0 9px;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.register-glucose__intro h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(2rem, 8vw, 2.7rem);
+  font-weight: 680;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.register-glucose__intro > p:last-child {
+  margin: 14px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.glucose-form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.form-field label,
+.measurement-field legend {
+  color: var(--color-text);
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.glucose-input-wrap {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  min-height: 70px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.glucose-input-wrap:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.glucose-input-wrap input {
+  min-width: 0;
+  flex: 1;
+  padding: 13px 16px;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 1.7rem;
+  font-weight: 650;
+  outline: 0;
+}
+
+.glucose-input-wrap span {
+  padding: 0 17px 0 8px;
+  color: var(--color-text-secondary);
+  font-size: 0.98rem;
+  white-space: nowrap;
+}
+
+.glucose-input-wrap input::-webkit-inner-spin-button,
+.glucose-input-wrap input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.measurement-field {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.measurement-options {
+  display: grid;
+  gap: 9px;
+  margin-top: 4px;
+}
+
+.measurement-option {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 0.96rem;
+}
+
+.measurement-option:hover,
+.measurement-option.is-selected {
+  border-color: var(--color-primary);
+}
+
+.measurement-option.is-selected {
+  background: var(--color-primary-soft);
+}
+
+.measurement-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.measurement-option input:focus-visible + .measurement-option__indicator {
+  outline: 3px solid #8bc8bd;
+  outline-offset: 3px;
+}
+
+.measurement-option__indicator {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border: 1.5px solid var(--color-text-secondary);
+  border-radius: 50%;
+  place-items: center;
+}
+
+.measurement-option.is-selected .measurement-option__indicator {
+  border-color: var(--color-primary);
+}
+
+.measurement-option.is-selected .measurement-option__indicator::after {
+  width: 10px;
+  height: 10px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  content: '';
+}
+
+.date-time-fields {
+  display: grid;
+  gap: 18px;
+}
+
+.date-time-fields input {
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 13px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.date-time-fields input:focus-visible {
+  outline: 3px solid #8bc8bd;
+  outline-offset: 2px;
+  border-color: var(--color-primary);
+}
+
+.form-error {
+  margin: 0;
+  color: #a33f3f;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.date-time-error {
+  margin-top: -18px;
+}
+
+.save-reading-button {
+  display: flex;
+  width: 100%;
+  min-height: 60px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  color: #fff;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 6px 0 #0e514b;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 750;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.save-reading-button:hover {
+  background: var(--color-primary-hover);
+}
+
+.save-reading-button:active {
+  box-shadow: 0 3px 0 #0e514b;
+  transform: translateY(3px);
+}
+
+.save-reading-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.success-message {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: -9px;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: 9px;
+  font-weight: 700;
+}
+
+@media (min-width: 560px) {
+  .date-time-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 700px) {
+  .register-glucose {
+    padding: 0 32px 64px;
+  }
+
+  .register-glucose__header {
+    min-height: 88px;
+  }
+
+  .register-glucose__intro {
+    padding-top: 64px;
+  }
+}
