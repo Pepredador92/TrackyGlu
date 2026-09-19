@@ -1,4 +1,5 @@
-import { LogOut } from 'lucide-react'
+import { Bell, LogOut } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../components/auth/useAuth'
 import './ProfessionalPlaceholder.css'
 
@@ -13,6 +14,10 @@ function ProfessionalPlaceholder() {
         <h1 id="professional-title">Panel profesional</h1>
         <p className="professional-placeholder__session">Sesión iniciada como:</p>
         <p className="professional-placeholder__name">{profile?.displayName ?? 'Profesional de prueba'}</p>
+        <Link className="professional-placeholder__alerts-link" to="/professional/alerts">
+          <Bell size={19} strokeWidth={2} aria-hidden="true" />
+          <span>Alertas de pacientes</span>
+        </Link>
         <button className="professional-placeholder__logout" type="button" onClick={() => void signOut()}>
           <LogOut size={18} strokeWidth={2} aria-hidden="true" />
           <span>Cerrar sesión</span>

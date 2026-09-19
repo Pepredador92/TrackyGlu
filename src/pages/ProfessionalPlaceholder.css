@@ -47,6 +47,29 @@
   font-weight: 700;
 }
 
+.professional-placeholder__alerts-link {
+  display: inline-flex;
+  min-height: 50px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 11px 16px;
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.professional-placeholder__alerts-link:hover {
+  border-color: var(--color-primary);
+}
+
+.professional-placeholder__alerts-link:focus-visible {
+  outline: 3px solid #8bc8bd;
+  outline-offset: 3px;
+}
+
 .professional-placeholder__logout {
   display: inline-flex;
   min-height: 48px;
