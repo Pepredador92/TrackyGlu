@@ -38,7 +38,8 @@
 }
 
 .professional-tasks__logout:focus-visible,
-.clinical-task-card__action:focus-visible {
+.clinical-task-card__action:focus-visible,
+.clinical-task-card__decision-button:focus-visible {
   outline: 3px solid #8bc8bd;
   outline-offset: 3px;
 }
@@ -209,7 +210,6 @@
   font-weight: 700;
 }
 
-.clinical-task-card__field select,
 .clinical-task-card__field textarea {
   width: 100%;
   padding: 11px 12px;
@@ -219,21 +219,71 @@
   border-radius: 9px;
   font: inherit;
   font-size: 0.95rem;
-}
-
-.clinical-task-card__field select {
-  min-height: 48px;
-}
-
-.clinical-task-card__field textarea {
   resize: vertical;
 }
 
-.clinical-task-card__field select:focus-visible,
 .clinical-task-card__field textarea:focus-visible {
   outline: 3px solid #8bc8bd;
   outline-offset: 2px;
   border-color: var(--color-primary);
+}
+
+.clinical-task-card__field-help,
+.clinical-task-card__decision-note {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.clinical-task-card__decision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.clinical-task-card__decision-button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.clinical-task-card__decision-button--approve {
+  color: #fff;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.clinical-task-card__decision-button--approve:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.clinical-task-card__decision-button--delete {
+  color: #a33f3f;
+  background: transparent;
+  border: 1px solid #d8aaaa;
+}
+
+.clinical-task-card__decision-button--delete:hover:not(:disabled) {
+  background: #fff5f5;
+  border-color: #a33f3f;
+}
+
+.clinical-task-card__decision-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.clinical-task-card__decision-note {
+  margin-top: -6px;
 }
 
 .clinical-task-card__closed {
