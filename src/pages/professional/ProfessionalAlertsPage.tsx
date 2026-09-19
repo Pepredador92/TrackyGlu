@@ -150,7 +150,7 @@ function AlertCard({
         {alert.glucoseValue === null ? (
           <span className="alert-card__reading-missing">Lectura no disponible</span>
         ) : (
-          <><strong>{alert.glucoseValue}</strong><span>{alert.unit}</span></>
+          <><strong>{alert.glucoseValue}</strong>{alert.unit && <span>{alert.unit}</span>}</>
         )}
       </div>
       <div className="alert-card__details">

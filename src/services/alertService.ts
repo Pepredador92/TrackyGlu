@@ -133,7 +133,7 @@ function mapAlertRow(row: AlertRow, patientNames: Map<string, string>): Professi
     status: row.status,
     reason: row.reason,
     glucoseValue: getMetadataNumber(row.metadata, 'glucoseValue') ?? getMetadataNumber(row.metadata, 'glucose_value'),
-    unit: getMetadataString(row.metadata, 'unit') ?? 'mg/dL',
+    unit: getMetadataString(row.metadata, 'unit') ?? '',
     measurementContext: getMetadataString(row.metadata, 'measurementContext') ?? getMetadataString(row.metadata, 'measurement_context'),
     measuredAt: getMetadataString(row.metadata, 'measuredAt') ?? getMetadataString(row.metadata, 'measured_at'),
     createdAt: row.created_at,
