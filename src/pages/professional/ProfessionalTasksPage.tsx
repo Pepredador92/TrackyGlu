@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, LogOut, Play } from 'lucide-react'
+import { ArrowLeft, Check, LogOut, Play, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../components/auth/useAuth'
@@ -31,7 +31,7 @@ const statusLabels: Record<ClinicalTaskStatus, string> = {
 const decisionLabels: Record<ClinicalTaskDecision, string> = {
   approved: 'Aprobada',
   modified: 'Modificada',
-  cancelled: 'Cancelada',
+  cancelled: 'Eliminada',
 }
 
 const dateTimeFormatter = new Intl.DateTimeFormat('es-MX', {
@@ -47,7 +47,6 @@ function ProfessionalTasksPage() {
   const [processingTaskId, setProcessingTaskId] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
   const [operationError, setOperationError] = useState(false)
-  const [decisions, setDecisions] = useState<Record<string, ClinicalTaskDecision | ''>>({})
   const [notes, setNotes] = useState<Record<string, string>>({})
 
   async function loadTasks() {
@@ -104,11 +103,13 @@ function ProfessionalTasksPage() {
     }
   }
 
-  async function handleCloseTask(task: ProfessionalClinicalTask) {
-    const decision = decisions[task.id]
+  async function handleCloseTask(
+    task: ProfessionalClinicalTask,
+    decision: 'approved' | 'cancelled',
+  ) {
     const reviewNote = notes[task.id] ?? ''
 
-    if (!decision || !reviewNote.trim()) {
+    if (!reviewNote.trim()) {
       setOperationError(true)
       setSuccessMessage('')
       return
@@ -121,7 +122,7 @@ function ProfessionalTasksPage() {
     try {
       await closeClinicalTask(task.id, decision, reviewNote)
       await loadTasks()
-      setSuccessMessage('Tarea cerrada correctamente.')
+      setSuccessMessage(decision === 'approved' ? 'Tarea aprobada y cerrada correctamente.' : 'Tarea eliminada de la cola activa.')
     } catch (error) {
       console.error('Could not close clinical task', error)
       setOperationError(true)
@@ -162,10 +163,8 @@ function ProfessionalTasksPage() {
               <ClinicalTaskCard
                 key={task.id}
                 task={task}
-                decision={decisions[task.id] ?? ''}
                 note={notes[task.id] ?? ''}
                 isProcessing={processingTaskId === task.id}
-                onDecisionChange={(value) => setDecisions((current) => ({ ...current, [task.id]: value }))}
                 onNoteChange={(value) => setNotes((current) => ({ ...current, [task.id]: value }))}
                 onStartReview={handleStartReview}
                 onCloseTask={handleCloseTask}
@@ -180,22 +179,18 @@ function ProfessionalTasksPage() {
 
 function ClinicalTaskCard({
   task,
-  decision,
   note,
   isProcessing,
-  onDecisionChange,
   onNoteChange,
   onStartReview,
   onCloseTask,
 }: {
   task: ProfessionalClinicalTask
-  decision: ClinicalTaskDecision | ''
   note: string
   isProcessing: boolean
-  onDecisionChange: (value: ClinicalTaskDecision | '') => void
   onNoteChange: (value: string) => void
   onStartReview: (taskId: string) => void
-  onCloseTask: (task: ProfessionalClinicalTask) => void
+  onCloseTask: (task: ProfessionalClinicalTask, decision: 'approved' | 'cancelled') => void
 }) {
   return (
     <article className="clinical-task-card">
@@ -231,34 +226,43 @@ function ClinicalTaskCard({
       {task.status === 'in_review' && (
         <div className="clinical-task-card__form">
           <div className="clinical-task-card__field">
-            <label htmlFor={`decision-${task.id}`}>Decisión</label>
-            <select
-              id={`decision-${task.id}`}
-              value={decision}
-              onChange={(event) => onDecisionChange(event.target.value as ClinicalTaskDecision | '')}
-              disabled={isProcessing}
-            >
-              <option value="">Selecciona una decisión</option>
-              <option value="approved">Aprobar</option>
-              <option value="modified">Modificar</option>
-              <option value="cancelled">Cancelar</option>
-            </select>
-          </div>
-          <div className="clinical-task-card__field">
             <label htmlFor={`note-${task.id}`}>Nota de revisión</label>
             <textarea
               id={`note-${task.id}`}
               value={note}
               onChange={(event) => onNoteChange(event.target.value)}
-              placeholder="Documenta brevemente la revisión realizada y la decisión tomada."
-              rows={4}
+              placeholder="Escribe o edita libremente la nota de revisión antes de tomar una decisión."
+              rows={5}
               disabled={isProcessing}
             />
+            <p className="clinical-task-card__field-help">
+              El texto es libre y puede modificarse antes de aprobar o eliminar la tarea de la cola activa.
+            </p>
           </div>
-          <button className="clinical-task-card__action" type="button" disabled={isProcessing} onClick={() => onCloseTask(task)}>
-            <Check size={17} strokeWidth={2} aria-hidden="true" />
-            <span>{isProcessing ? 'Cerrando...' : 'Cerrar tarea'}</span>
-          </button>
+
+          <div className="clinical-task-card__decision-actions" aria-label="Decisión sobre la tarea">
+            <button
+              className="clinical-task-card__decision-button clinical-task-card__decision-button--approve"
+              type="button"
+              disabled={isProcessing || !note.trim()}
+              onClick={() => onCloseTask(task, 'approved')}
+            >
+              <Check size={17} strokeWidth={2} aria-hidden="true" />
+              <span>{isProcessing ? 'Procesando...' : 'Aprobar'}</span>
+            </button>
+            <button
+              className="clinical-task-card__decision-button clinical-task-card__decision-button--delete"
+              type="button"
+              disabled={isProcessing || !note.trim()}
+              onClick={() => onCloseTask(task, 'cancelled')}
+            >
+              <Trash2 size={17} strokeWidth={2} aria-hidden="true" />
+              <span>{isProcessing ? 'Procesando...' : 'Eliminar'}</span>
+            </button>
+          </div>
+          <p className="clinical-task-card__decision-note">
+            Eliminar no borra el registro: lo cierra como cancelado para conservar la trazabilidad.
+          </p>
         </div>
       )}
 
