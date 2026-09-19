@@ -3,7 +3,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { createReading } from '../../services/glucose/glucoseService'
-import type { GlucoseMeasurementContext, GlucoseReading } from '../../types/glucose'
+import type { GlucoseMeasurementContext } from '../../types/glucose'
 import './RegisterGlucose.css'
 
 const MEASUREMENT_CONTEXTS: Array<{
@@ -33,10 +33,6 @@ function getCurrentTime(): string {
   return `${hours}:${minutes}`
 }
 
-function createReadingId(): string {
-  return crypto.randomUUID()
-}
-
 function RegisterGlucose() {
   const [glucoseValue, setGlucoseValue] = useState('')
   const [measurementContext, setMeasurementContext] = useState<GlucoseMeasurementContext | ''>('')
@@ -45,10 +41,12 @@ function RegisterGlucose() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
+  const [saveError, setSaveError] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsSaved(false)
+    setSaveError(false)
 
     const nextErrors: Record<string, string> = {}
     const numericGlucoseValue = Number(glucoseValue)
@@ -71,12 +69,9 @@ function RegisterGlucose() {
       return
     }
 
-    const reading: GlucoseReading = {
-      id: createReadingId(),
-      // MOCK/TEMPORAL: reemplazar cuando exista autenticación.
-      patientId: 'P0001',
+    const reading = {
       glucoseValue: numericGlucoseValue,
-      unit: 'mg/dL',
+      unit: 'mg/dL' as const,
       measurementContext,
       timestamp: new Date(`${date}T${time}`).toISOString(),
     }
@@ -89,6 +84,9 @@ function RegisterGlucose() {
       setGlucoseValue('')
       setMeasurementContext('')
       setErrors({})
+    } catch (error) {
+      console.error('Could not save glucose reading', error)
+      setSaveError(true)
     } finally {
       setIsSaving(false)
     }
@@ -184,6 +182,12 @@ function RegisterGlucose() {
           <button className="save-reading-button" type="submit" disabled={isSaving}>
             {isSaving ? <span>Guardando...</span> : <><Save size={19} strokeWidth={2} aria-hidden="true" /><span>Guardar lectura</span></>}
           </button>
+
+          {saveError && (
+            <p className="form-error" role="alert">
+              No fue posible guardar la lectura. Intenta nuevamente.
+            </p>
+          )}
 
           {isSaved && (
             <div className="success-message" role="status">
