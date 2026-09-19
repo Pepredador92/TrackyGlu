@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
-function getRequiredEnv(name: 'VITE_SUPABASE_URL' | 'VITE_SUPABASE_ANON_KEY'): string {
+function getRequiredEnv(name: 'VITE_SUPABASE_URL'): string {
   const value = import.meta.env[name]
 
   if (!value) {
@@ -10,7 +10,21 @@ function getRequiredEnv(name: 'VITE_SUPABASE_URL' | 'VITE_SUPABASE_ANON_KEY'): s
   return value
 }
 
-const supabaseUrl = getRequiredEnv('VITE_SUPABASE_URL')
-const supabaseAnonKey = getRequiredEnv('VITE_SUPABASE_ANON_KEY')
+function getSupabasePublicKey(): string {
+  const value =
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+  if (!value) {
+    throw new Error(
+      'Missing Supabase public key. Set VITE_SUPABASE_PUBLISHABLE_KEY or VITE_SUPABASE_ANON_KEY in .env.local',
+    )
+  }
+
+  return value
+}
+
+const supabaseUrl = getRequiredEnv('VITE_SUPABASE_URL')
+const supabasePublicKey = getSupabasePublicKey()
+
+export const supabase = createClient(supabaseUrl, supabasePublicKey)
