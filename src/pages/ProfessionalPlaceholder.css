@@ -70,6 +70,37 @@
   outline-offset: 3px;
 }
 
+.professional-placeholder__tasks-link {
+  display: flex;
+  width: min(100%, 320px);
+  min-height: 50px;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.professional-placeholder__tasks-link small {
+  color: var(--color-text-secondary);
+  font-size: 0.76rem;
+  font-weight: 400;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.professional-placeholder__tasks-link:hover {
+  border-color: var(--color-primary);
+}
+
+.professional-placeholder__tasks-link:focus-visible {
+  outline: 3px solid #8bc8bd;
+  outline-offset: 3px;
+}
+
 .professional-placeholder__logout {
   display: inline-flex;
   min-height: 48px;

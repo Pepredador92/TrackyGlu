@@ -6,6 +6,7 @@ import PatientHome from './pages/patient/PatientHome'
 import Login from './pages/Login'
 import ProfessionalPlaceholder from './pages/ProfessionalPlaceholder'
 import ProfessionalAlertsPage from './pages/professional/ProfessionalAlertsPage'
+import ProfessionalTasksPage from './pages/professional/ProfessionalTasksPage'
 import RegisterGlucose from './pages/patient/RegisterGlucose'
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
             <Route element={<ProfessionalRoute />}>
               <Route path="/professional" element={<ProfessionalPlaceholder />} />
               <Route path="/professional/alerts" element={<ProfessionalAlertsPage />} />
+              <Route path="/professional/tasks" element={<ProfessionalTasksPage />} />
             </Route>
           </Route>
         </Routes>

@@ -1,0 +1,268 @@
+.professional-tasks {
+  min-height: 100vh;
+  padding: 0 20px 48px;
+}
+
+.professional-tasks__container {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.professional-tasks__header {
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.professional-tasks__logout {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.professional-tasks__logout:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.professional-tasks__logout:focus-visible,
+.clinical-task-card__action:focus-visible {
+  outline: 3px solid #8bc8bd;
+  outline-offset: 3px;
+}
+
+.professional-tasks__intro {
+  padding: 42px 0 30px;
+}
+
+.professional-tasks__eyebrow {
+  margin: 0 0 9px;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.professional-tasks__intro h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(2rem, 8vw, 2.7rem);
+  font-weight: 680;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.professional-tasks__intro > p:last-child {
+  margin: 14px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.tasks-feedback {
+  margin: 8px 0 20px;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.tasks-feedback--error {
+  color: #a33f3f;
+}
+
+.tasks-feedback--success {
+  color: var(--color-primary);
+  font-weight: 650;
+}
+
+.professional-tasks__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.clinical-task-card {
+  padding: 18px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.clinical-task-card__topline,
+.clinical-task-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.clinical-task-card__patient {
+  color: var(--color-text);
+  font-weight: 750;
+}
+
+.clinical-task-card__status,
+.clinical-task-card__priority {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.clinical-task-card__status {
+  padding: 5px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  text-align: right;
+}
+
+.clinical-task-card__meta {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.clinical-task-card__reason {
+  margin: 14px 0 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.clinical-task-card__reading {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 18px 0 0;
+  color: var(--color-text-secondary);
+}
+
+.clinical-task-card__reading strong {
+  color: var(--color-text);
+  font-size: 1.9rem;
+  font-weight: 680;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.clinical-task-card__date {
+  margin: 12px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.clinical-task-card__action {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 9px 14px;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.clinical-task-card__action:hover {
+  border-color: var(--color-primary);
+}
+
+.clinical-task-card__action:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.clinical-task-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-border);
+}
+
+.clinical-task-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.clinical-task-card__field label {
+  color: var(--color-text);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.clinical-task-card__field select,
+.clinical-task-card__field textarea {
+  width: 100%;
+  padding: 11px 12px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.clinical-task-card__field select {
+  min-height: 48px;
+}
+
+.clinical-task-card__field textarea {
+  resize: vertical;
+}
+
+.clinical-task-card__field select:focus-visible,
+.clinical-task-card__field textarea:focus-visible {
+  outline: 3px solid #8bc8bd;
+  outline-offset: 2px;
+  border-color: var(--color-primary);
+}
+
+.clinical-task-card__closed {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.clinical-task-card__closed p {
+  margin: 8px 0 0;
+}
+
+.clinical-task-card__closed strong {
+  color: var(--color-text);
+}
+
+@media (min-width: 700px) {
+  .professional-tasks {
+    padding: 0 32px 64px;
+  }
+
+  .professional-tasks__header {
+    min-height: 88px;
+  }
+
+  .professional-tasks__intro {
+    padding-top: 64px;
+  }
+}
