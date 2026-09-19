@@ -1,0 +1,65 @@
+.auth-state {
+  display: grid;
+  min-height: 100vh;
+  padding: 24px;
+  place-items: center;
+}
+
+.auth-state__content {
+  display: flex;
+  width: min(100%, 420px);
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  padding: 32px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.auth-state__brand {
+  color: var(--color-text);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.auth-state__content h1,
+.auth-state__content p {
+  margin: 0;
+}
+
+.auth-state__content h1 {
+  color: var(--color-text);
+  font-size: 1.25rem;
+  line-height: 1.35;
+}
+
+.auth-state__content p {
+  color: var(--color-text-secondary);
+}
+
+.auth-state__button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.auth-state__button:hover {
+  border-color: var(--color-primary);
+}
+
+.auth-state__button:focus-visible {
+  outline: 3px solid #8bc8bd;
+  outline-offset: 3px;
+}

@@ -1,12 +1,14 @@
-import { Clock3, History, Plus, UserRound } from 'lucide-react'
+import { Clock3, History, LogOut, Plus, UserRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../components/auth/useAuth'
 import { getReadings } from '../../services/glucose/glucoseService'
 import type { GlucoseReading } from '../../types/glucose'
 import { GLUCOSE_CONTEXT_LABELS, formatReadingDateTime, isToday } from '../../utils/glucose'
 import './PatientHome.css'
 
 function PatientHome() {
+  const { profile, signOut } = useAuth()
   const [readings, setReadings] = useState<GlucoseReading[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
@@ -52,13 +54,17 @@ function PatientHome() {
       <div className="patient-home__container">
         <header className="patient-header">
           <span className="patient-header__brand">TrackyGlu</span>
-          <button className="icon-button" type="button" aria-label="Abrir perfil">
+          <div className="patient-header__actions">
             <UserRound size={21} strokeWidth={1.8} aria-hidden="true" />
-          </button>
+            <button className="logout-button" type="button" onClick={() => void signOut()}>
+              <LogOut size={16} strokeWidth={2} aria-hidden="true" />
+              <span>Cerrar sesión</span>
+            </button>
+          </div>
         </header>
 
         <section className="patient-home__intro" aria-labelledby="patient-home-title">
-          <p className="patient-home__greeting">Hola</p>
+          <p className="patient-home__greeting">Hola, {profile?.displayName ?? 'Paciente'}</p>
           <h1 id="patient-home-title">Registra tu glucosa de hoy</h1>
           <p className="patient-home__description">
             Mantén actualizado tu seguimiento.
