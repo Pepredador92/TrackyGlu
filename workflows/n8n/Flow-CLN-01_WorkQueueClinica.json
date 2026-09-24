@@ -1,0 +1,679 @@
+{
+  "name": "Flow-CLN-01_WorkQueueClinica",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trackyglu-alert-acknowledged",
+        "options": {}
+      },
+      "id": "76596eda-d47d-46b7-801b-5cce5892da61",
+      "name": "Webhook - Alert Acknowledged",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1680,
+        192
+      ],
+      "webhookId": "trackyglu-alert-acknowledged"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cln-n01",
+              "name": "source_event_id",
+              "value": "={{ $json.body.record.event_id }}",
+              "type": "string"
+            },
+            {
+              "id": "cln-n02",
+              "name": "patient_id",
+              "value": "={{ $json.body.record.patient_id }}",
+              "type": "string"
+            },
+            {
+              "id": "cln-n03",
+              "name": "source_alert_id",
+              "value": "={{ $json.body.record.entity_id }}",
+              "type": "string"
+            },
+            {
+              "id": "cln-n04",
+              "name": "actor_profile_id",
+              "value": "={{ $json.body.record.actor_profile_id }}",
+              "type": "string"
+            },
+            {
+              "id": "cln-n05",
+              "name": "priority",
+              "value": "={{ $json.body.record.metadata.severity }}",
+              "type": "string"
+            },
+            {
+              "id": "cln-n06",
+              "name": "alert_type",
+              "value": "={{ $json.body.record.metadata.alert_type }}",
+              "type": "string"
+            },
+            {
+              "id": "cln-n07",
+              "name": "acknowledged_at",
+              "value": "={{ $json.body.record.metadata.acknowledged_at }}",
+              "type": "string"
+            },
+            {
+              "id": "cln-n08",
+              "name": "trigger_rule",
+              "value": "alert_acknowledged",
+              "type": "string"
+            },
+            {
+              "id": "cln-n09",
+              "name": "source_event_type",
+              "value": "={{ $json.body.record.event_type }}",
+              "type": "string"
+            },
+            {
+              "id": "cln-n10",
+              "name": "source_operation",
+              "value": "={{ $json.body.type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a51ef933-3a1b-4e77-b689-c44868f6d5ca",
+      "name": "Normalize Clinical Trigger",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1456,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "workflow_runs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "workflow_key",
+              "fieldValue": "Flow-CLN-01_WorkQueueClinica"
+            },
+            {
+              "fieldId": "workflow_name",
+              "fieldValue": "Flow-CLN-01_WorkQueueClinica"
+            },
+            {
+              "fieldId": "workflow_version",
+              "fieldValue": "1.0.0"
+            },
+            {
+              "fieldId": "n8n_execution_id",
+              "fieldValue": "={{ $execution.id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "running"
+            },
+            {
+              "fieldId": "trigger_event_id",
+              "fieldValue": "={{ $json.source_event_id }}"
+            },
+            {
+              "fieldId": "input_payload",
+              "fieldValue": "={{ $json }}"
+            }
+          ]
+        }
+      },
+      "id": "195b7a7d-9390-4ee0-a6db-cbcdf959059e",
+      "name": "Create CLN Workflow Run",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        192
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "professionals",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "profile_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Clinical Trigger').first().json.actor_profile_id }}"
+            }
+          ]
+        }
+      },
+      "id": "ac8edd60-6d8a-4537-b2ad-4daeaa9574cb",
+      "name": "Get Responsible Professional",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1008,
+        192
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cln-prof-exists",
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "acaac216-60fd-4f0e-bc7c-3ad4a1ca9c0b",
+      "name": "IF Professional Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -784,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "clinical_tasks",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "source_alert_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Clinical Trigger').first().json.source_alert_id }}"
+            },
+            {
+              "keyName": "trigger_rule",
+              "condition": "eq",
+              "keyValue": "alert_acknowledged"
+            }
+          ]
+        }
+      },
+      "id": "630b1c90-83d7-4251-8470-0e4ac74c8cca",
+      "name": "Get Existing Clinical Task",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        96
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cln-task-exists",
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "105b7614-d559-43ac-84d6-456f1d6fb10a",
+      "name": "IF Clinical Task Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -336,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "clinical_tasks",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('Normalize Clinical Trigger').first().json.patient_id }}"
+            },
+            {
+              "fieldId": "source_event_id",
+              "fieldValue": "={{ $('Normalize Clinical Trigger').first().json.source_event_id }}"
+            },
+            {
+              "fieldId": "source_alert_id",
+              "fieldValue": "={{ $('Normalize Clinical Trigger').first().json.source_alert_id }}"
+            },
+            {
+              "fieldId": "trigger_rule",
+              "fieldValue": "alert_acknowledged"
+            },
+            {
+              "fieldId": "priority",
+              "fieldValue": "={{ $('Normalize Clinical Trigger').first().json.priority }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending_review"
+            },
+            {
+              "fieldId": "assigned_professional_id",
+              "fieldValue": "={{ $('Get Responsible Professional').first().json.id }}"
+            },
+            {
+              "fieldId": "ai_draft_status",
+              "fieldValue": "not_requested"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Create CLN Workflow Run').first().json.id }}"
+            }
+          ]
+        }
+      },
+      "id": "290fc8bd-bd7f-4661-8764-6fa908cf9792",
+      "name": "Create Clinical Task",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        192
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "event_id",
+              "fieldValue": "={{ $('Create Clinical Task').first().json.event_id }}"
+            },
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('Create Clinical Task').first().json.patient_id }}"
+            },
+            {
+              "fieldId": "event_type",
+              "fieldValue": "clinical_task.created"
+            },
+            {
+              "fieldId": "entity_type",
+              "fieldValue": "clinical_task"
+            },
+            {
+              "fieldId": "entity_id",
+              "fieldValue": "={{ $('Create Clinical Task').first().json.id }}"
+            },
+            {
+              "fieldId": "causation_event_id",
+              "fieldValue": "={{ $('Normalize Clinical Trigger').first().json.source_event_id }}"
+            },
+            {
+              "fieldId": "actor_type",
+              "fieldValue": "system"
+            },
+            {
+              "fieldId": "source_channel",
+              "fieldValue": "n8n"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Create CLN Workflow Run').first().json.id }}"
+            },
+            {
+              "fieldId": "new_state",
+              "fieldValue": "={{ $('Create Clinical Task').first().json }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { trigger_rule: 'alert_acknowledged', source_alert_id: $('Normalize Clinical Trigger').first().json.source_alert_id, alert_type: $('Normalize Clinical Trigger').first().json.alert_type, priority: $('Normalize Clinical Trigger').first().json.priority, assigned_professional_id: $('Get Responsible Professional').first().json.id } }}"
+            }
+          ]
+        }
+      },
+      "id": "4ef4e4ce-e9ae-41fc-b08e-c99cfce2661e",
+      "name": "Create Clinical Task Event",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        112,
+        192
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create CLN Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { task_created: true, clinical_task_id: $('Create Clinical Task').first().json.id, clinical_task_event_id: $('Create Clinical Task').first().json.event_id, status: $('Create Clinical Task').first().json.status, assigned_professional_id: $('Create Clinical Task').first().json.assigned_professional_id } }}"
+            }
+          ]
+        }
+      },
+      "id": "79a56a42-a917-48ee-990d-79384e642bab",
+      "name": "Close CLN Run - Task Created",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        336,
+        192
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create CLN Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { task_created: false, duplicate: true, existing_task_id: $('Get Existing Clinical Task').first().json.id, source_alert_id: $('Normalize Clinical Trigger').first().json.source_alert_id } }}"
+            }
+          ]
+        }
+      },
+      "id": "2a7f738f-a590-447f-b21a-fc341f3e49e7",
+      "name": "Close CLN Run - Duplicate",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create CLN Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "failed"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "error_message",
+              "fieldValue": "No professional record found for actor_profile_id"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { task_created: false, reason: 'professional_not_found', actor_profile_id: $('Normalize Clinical Trigger').first().json.actor_profile_id } }}"
+            }
+          ]
+        }
+      },
+      "id": "08ceb0bd-2488-4219-aadc-16652656539f",
+      "name": "Close CLN Run - Professional Missing",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        288
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Alert Acknowledged": {
+      "main": [
+        [
+          {
+            "node": "Normalize Clinical Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Clinical Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create CLN Workflow Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create CLN Workflow Run": {
+      "main": [
+        [
+          {
+            "node": "Get Responsible Professional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Responsible Professional": {
+      "main": [
+        [
+          {
+            "node": "IF Professional Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Professional Found": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Clinical Task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Close CLN Run - Professional Missing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Clinical Task": {
+      "main": [
+        [
+          {
+            "node": "IF Clinical Task Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Clinical Task Exists": {
+      "main": [
+        [
+          {
+            "node": "Close CLN Run - Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Clinical Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Clinical Task": {
+      "main": [
+        [
+          {
+            "node": "Create Clinical Task Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Clinical Task Event": {
+      "main": [
+        [
+          {
+            "node": "Close CLN Run - Task Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d9b76356-3f9c-4166-b3c0-b33b2fcf1d44",
+  "meta": {
+    "instanceId": "0d2cd94368d1529af8272aa69d8382380c81a77cb395fbe48cc01cea4f06e2f0"
+  },
+  "nodeGroups": [],
+  "id": "OeofTKpvFAssK33K",
+  "tags": []
+}

@@ -55,7 +55,7 @@ function PatientHome() {
         <header className="patient-header">
           <span className="patient-header__brand">TrackyGlu</span>
           <div className="patient-header__actions">
-            <UserRound size={21} strokeWidth={1.8} aria-hidden="true" />
+            <Link className="quiet-link" to="/mi-perfil"><UserRound size={21} strokeWidth={1.8} aria-hidden="true" /><span>Mi perfil</span></Link>
             <button className="logout-button" type="button" onClick={() => void signOut()}>
               <LogOut size={16} strokeWidth={2} aria-hidden="true" />
               <span>Cerrar sesión</span>

@@ -1,0 +1,149 @@
+import { test, expect } from '@playwright/test'
+import { randomUUID } from 'node:crypto'
+import { mkdir } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
+
+function fixture(operation: string, payload: object) {
+  execFileSync(process.execPath, ['tests/browser-fixtures.mjs', operation, JSON.stringify(payload)], { stdio: 'pipe' })
+}
+
+const createdEmails: string[] = []
+function testEmail(prefix: string) {
+  const email = `${prefix}-${randomUUID()}@trackyglu.test`
+  createdEmails.push(email)
+  return email
+}
+
+test.afterAll(() => fixture('cleanup', { emails: createdEmails }))
+
+test('paciente: registro, avance persistente, validación y finalización', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.goto('/login?modo=registro')
+  await page.getByLabel('Nombre completo').fill('Paciente navegador')
+  await page.getByLabel('Correo electrónico').fill(testEmail('browser'))
+  await page.getByLabel(/^Contraseña/).fill('TrackyGlu2026!')
+  await page.getByRole('button', { name: 'Crear mi cuenta' }).click()
+  await expect(page).toHaveURL(/mi-historia/)
+  await expect(page.getByRole('heading', { name: 'Empecemos por conocerte' })).toBeVisible()
+  await page.getByRole('button', { name: 'Guardar y continuar', exact: true }).click()
+  await expect(page.getByText('Revisa tu fecha de nacimiento.')).toBeVisible()
+  await page.getByLabel('Fecha de nacimiento').fill('1983-04-12')
+  await page.getByLabel('Sexo registrado').selectOption('female')
+  await page.getByRole('button', { name: 'Guardar y continuar', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Cuéntanos sobre tu diabetes' })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Cuéntanos sobre tu diabetes' })).toBeVisible()
+  await page.getByLabel('¿Qué tipo de diabetes te diagnosticaron?').selectOption('type_2')
+  await page.getByRole('group', { name: '¿Te han diagnosticado otras condiciones?' }).getByLabel('No', { exact: true }).check()
+  await page.getByRole('button', { name: 'Guardar y continuar', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Tu tratamiento actual' })).toBeVisible()
+  await page.getByLabel('¿Qué tratamiento utilizas actualmente?').selectOption('unknown')
+  await page.getByRole('group', { name: '¿Tienes alguna alergia conocida?' }).getByLabel('No lo sé', { exact: true }).check()
+  await page.getByRole('button', { name: 'Guardar y continuar después' }).click()
+  await expect(page).toHaveURL(/mi-perfil/)
+  await page.getByRole('link', { name: 'Continuar mi historia' }).click()
+  await expect(page.getByRole('heading', { name: 'Tu tratamiento actual' })).toBeVisible()
+  await expect(page.getByLabel('¿Qué tratamiento utilizas actualmente?')).toHaveValue('unknown')
+  await page.getByRole('button', { name: 'Guardar y continuar', exact: true }).click()
+  await page.getByLabel('Revisé mis respuestas').check()
+  await page.getByRole('button', { name: 'Completar mi historia' }).click()
+  await expect(page.getByText('Tu historia inicial está lista.', { exact: false })).toBeVisible()
+  await page.getByRole('link', { name: 'Ir a mi inicio' }).click()
+  await expect(page.getByRole('heading', { name: 'Registra tu glucosa de hoy' })).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('profesional: alta, invitación, vínculo y revisión visible solo al equipo', async ({ browser }) => {
+  const context = await browser.newContext()
+  const patientContext = await browser.newContext()
+  const pro = await context.newPage()
+  const patient = await patientContext.newPage()
+  await pro.goto('/login?modo=registro')
+  await pro.getByRole('radio', { name: 'Profesional' }).check()
+  await pro.getByLabel('Nombre completo').fill('Profesional navegador')
+  await pro.getByLabel('Correo electrónico').fill(testEmail('pro-browser'))
+  await pro.getByLabel(/^Contraseña/).fill('TrackyGlu2026!')
+  await pro.getByRole('button', { name: 'Crear mi cuenta' }).click()
+  await expect(pro).toHaveURL(/professional\/profile/)
+  await pro.getByLabel('Profesión o especialidad').selectOption('Medicina general')
+  await pro.getByLabel('Cédula profesional').fill('PRUEBA-NAVEGADOR')
+  await pro.getByLabel('Institución o consultorio').fill('Prueba local')
+  await pro.getByRole('button', { name: 'Guardar mi perfil' }).click()
+  await expect(pro.getByRole('heading', { name: 'Mis pacientes' })).toBeVisible()
+  await pro.getByRole('button', { name: 'Crear invitación' }).click()
+  const code = await pro.locator('.invitation-code-row code').first().innerText()
+
+  await patient.goto('/login')
+  await patient.getByLabel('Correo electrónico').fill('paciente@trackyglu.test')
+  await patient.getByLabel(/^Contraseña/).fill('TrackyGlu2026!')
+  await patient.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(patient.getByRole('link', { name: 'Mi perfil' })).toBeVisible()
+  await patient.getByRole('link', { name: 'Mi perfil' }).click()
+  await patient.getByLabel('Código de invitación').fill(code)
+  await patient.getByRole('button', { name: 'Revisar invitación' }).click()
+  await expect(patient.getByText('Profesional navegador', { exact: true })).toBeVisible()
+  await patient.getByLabel('Reconozco a este profesional').check()
+  await patient.getByRole('button', { name: 'Aceptar invitación' }).click()
+  await expect(patient.getByText('Ya estás vinculado con tu profesional.')).toBeVisible()
+  await pro.reload()
+  await pro.getByRole('link', { name: 'Elena Martínez' }).click()
+  await pro.getByLabel('Nota de revisión').fill('Revisión de interfaz: información declarada, pendiente valoración en consulta.')
+  await pro.getByRole('button', { name: 'Registrar revisión' }).click()
+  await expect(pro.getByText('Revisión registrada con fecha y versión de la historia.')).toBeVisible()
+  // Restore the demo patient's original team; the demo data remains useful for manual review.
+  pro.on('dialog', (dialog) => dialog.accept())
+  await pro.getByRole('button', { name: 'Finalizar vínculo con el paciente' }).click()
+  await expect(pro).toHaveURL(/\/professional$/)
+  await context.close(); await patientContext.close()
+})
+
+test('diseño móvil, referencias y recuperación de acceso', async ({ page }) => {
+  await mkdir('test-results/previews', { recursive: true })
+  await page.goto('/login')
+  await page.screenshot({ path: 'test-results/previews/login-desktop.png', fullPage: true })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.screenshot({ path: 'test-results/previews/login-mobile.png', fullPage: true })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.getByRole('link', { name: 'Olvidé mi contraseña' }).click()
+  await expect(page.getByRole('heading', { name: 'Recupera tu acceso' })).toBeVisible()
+  await page.goto('/fundamento-clinico')
+  await expect(page.getByRole('heading', { name: '¿Por qué te preguntamos esto?' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /NOM-004/ })).toHaveAttribute('href', 'https://dof.gob.mx/normasOficiales/4909/SALUD/SALUD.html')
+  await page.goto('/login')
+  await page.getByLabel('Correo electrónico').fill('paciente@trackyglu.test')
+  await page.getByLabel(/^Contraseña/).fill('TrackyGlu2026!')
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await page.getByRole('link', { name: 'Mi perfil' }).click()
+  await page.getByRole('link', { name: 'Actualizar mi historia' }).click()
+  await expect(page.getByRole('heading', { name: 'Empecemos por conocerte' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.screenshot({ path: 'test-results/previews/history-mobile.png', fullPage: true })
+  await page.setViewportSize({ width: 1365, height: 950 })
+  await page.screenshot({ path: 'test-results/previews/history-desktop.png', fullPage: true })
+})
+
+test('recuperación: correo local, nueva contraseña y sesión renovada', async ({ page, request }) => {
+  const email = testEmail('recovery-browser')
+  fixture('create', { email })
+  await page.goto('/recuperar-acceso')
+  await page.getByLabel('Correo electrónico').fill(email)
+  await page.getByRole('button', { name: 'Enviar enlace' }).click()
+  await expect(page.getByRole('status')).toContainText('recibirás un enlace')
+  let messageId = ''
+  await expect.poll(async () => {
+    const data = await (await request.get('http://127.0.0.1:55324/api/v1/messages')).json()
+    messageId = data.messages.find((message: { To: { Address: string }[] }) => message.To.some((recipient) => recipient.Address === email))?.ID ?? ''
+    return messageId
+  }).not.toBe('')
+  const message = await (await request.get(`http://127.0.0.1:55324/api/v1/message/${messageId}`)).json()
+  const link = message.HTML.match(/href="([^"]+)"/)?.[1]?.replaceAll('&amp;', '&')
+  expect(link).toBeTruthy()
+  await page.goto(link)
+  await expect(page.getByRole('heading', { name: 'Elige una nueva contraseña' })).toBeVisible()
+  await page.getByLabel('Nueva contraseña').fill('Renovada2026!')
+  await page.getByLabel('Confirmar contraseña').fill('Renovada2026!')
+  await page.getByRole('button', { name: 'Guardar contraseña' }).click()
+  await expect(page.getByRole('status')).toContainText('Tu contraseña se actualizó.')
+  fixture('verify-recovery', { email })
+})

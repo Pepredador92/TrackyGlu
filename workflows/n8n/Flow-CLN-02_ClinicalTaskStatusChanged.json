@@ -1,0 +1,982 @@
+{
+  "name": "Flow-CLN-02_ClinicalTaskStatusChanged",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trackyglu-clinical-task-status-changed",
+        "options": {}
+      },
+      "id": "1b09fac9-c943-4cad-913c-5cff88c21a79",
+      "name": "Webhook - Clinical Task Status Changed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1920,
+        288
+      ],
+      "webhookId": "trackyglu-clinical-task-status-changed"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "n01",
+              "name": "task_id",
+              "value": "={{ $json.body.record.id }}",
+              "type": "string"
+            },
+            {
+              "id": "n02",
+              "name": "task_event_id",
+              "value": "={{ $json.body.record.event_id }}",
+              "type": "string"
+            },
+            {
+              "id": "n03",
+              "name": "patient_id",
+              "value": "={{ $json.body.record.patient_id }}",
+              "type": "string"
+            },
+            {
+              "id": "n04",
+              "name": "source_alert_id",
+              "value": "={{ $json.body.record.source_alert_id }}",
+              "type": "string"
+            },
+            {
+              "id": "n05",
+              "name": "assigned_professional_id",
+              "value": "={{ $json.body.record.assigned_professional_id }}",
+              "type": "string"
+            },
+            {
+              "id": "n06",
+              "name": "old_status",
+              "value": "={{ $json.body.old_record.status }}",
+              "type": "string"
+            },
+            {
+              "id": "n07",
+              "name": "new_status",
+              "value": "={{ $json.body.record.status }}",
+              "type": "string"
+            },
+            {
+              "id": "n08",
+              "name": "first_review_at",
+              "value": "={{ $json.body.record.first_review_at }}",
+              "type": "string"
+            },
+            {
+              "id": "n09",
+              "name": "closed_at",
+              "value": "={{ $json.body.record.closed_at }}",
+              "type": "string"
+            },
+            {
+              "id": "n10",
+              "name": "final_decision",
+              "value": "={{ $json.body.record.final_decision }}",
+              "type": "string"
+            },
+            {
+              "id": "n11",
+              "name": "review_note",
+              "value": "={{ $json.body.record.review_note }}",
+              "type": "string"
+            },
+            {
+              "id": "n12",
+              "name": "priority",
+              "value": "={{ $json.body.record.priority }}",
+              "type": "string"
+            },
+            {
+              "id": "n13",
+              "name": "trigger_rule",
+              "value": "={{ $json.body.record.trigger_rule }}",
+              "type": "string"
+            },
+            {
+              "id": "n14",
+              "name": "old_record",
+              "value": "={{ $json.body.old_record }}",
+              "type": "object"
+            },
+            {
+              "id": "n15",
+              "name": "new_record",
+              "value": "={{ $json.body.record }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "08bc2c56-f3c1-4fc3-aac7-0d690a0f30c9",
+      "name": "Normalize Task Status Event",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1696,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "workflow_runs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "workflow_key",
+              "fieldValue": "Flow-CLN-02_ClinicalTaskStatusChanged"
+            },
+            {
+              "fieldId": "workflow_name",
+              "fieldValue": "Flow-CLN-02_ClinicalTaskStatusChanged"
+            },
+            {
+              "fieldId": "workflow_version",
+              "fieldValue": "1.0.0"
+            },
+            {
+              "fieldId": "n8n_execution_id",
+              "fieldValue": "={{ $execution.id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "running"
+            },
+            {
+              "fieldId": "trigger_event_id",
+              "fieldValue": "={{ $json.task_event_id }}"
+            },
+            {
+              "fieldId": "input_payload",
+              "fieldValue": "={{ $json }}"
+            }
+          ]
+        }
+      },
+      "id": "70790d98-d38f-425a-b08b-584e55aa398a",
+      "name": "Create CLN02 Workflow Run",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1472,
+        288
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "professionals",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Task Status Event').first().json.assigned_professional_id }}"
+            }
+          ]
+        }
+      },
+      "id": "6310a19a-d305-4774-9182-b8f0725c2c21",
+      "name": "Get Assigned Professional",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        288
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rev-01",
+              "leftValue": "={{ $('Normalize Task Status Event').first().json.old_status }}",
+              "rightValue": "pending_review",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "rev-02",
+              "leftValue": "={{ $('Normalize Task Status Event').first().json.new_status }}",
+              "rightValue": "in_review",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4e8ddb0e-7175-4264-8468-65b3ba40fa8e",
+      "name": "IF Review Started",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1024,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "events",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "entity_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Task Status Event').first().json.task_id }}"
+            },
+            {
+              "keyName": "event_type",
+              "condition": "eq",
+              "keyValue": "clinical_task.review_started"
+            }
+          ]
+        }
+      },
+      "id": "d356c7b8-e5e4-4f55-9471-76086499475d",
+      "name": "Get Existing Review Event",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        0
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "revdup",
+              "leftValue": "={{ !!$json.event_id }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e7b56b06-5556-4eb6-9543-cc9b83e3ca02",
+      "name": "IF Review Event Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -576,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('Normalize Task Status Event').first().json.patient_id }}"
+            },
+            {
+              "fieldId": "event_type",
+              "fieldValue": "clinical_task.review_started"
+            },
+            {
+              "fieldId": "entity_type",
+              "fieldValue": "clinical_task"
+            },
+            {
+              "fieldId": "entity_id",
+              "fieldValue": "={{ $('Normalize Task Status Event').first().json.task_id }}"
+            },
+            {
+              "fieldId": "causation_event_id",
+              "fieldValue": "={{ $('Normalize Task Status Event').first().json.task_event_id }}"
+            },
+            {
+              "fieldId": "actor_type",
+              "fieldValue": "professional"
+            },
+            {
+              "fieldId": "actor_profile_id",
+              "fieldValue": "={{ $('Get Assigned Professional').first().json.profile_id }}"
+            },
+            {
+              "fieldId": "source_channel",
+              "fieldValue": "web"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Create CLN02 Workflow Run').first().json.id }}"
+            },
+            {
+              "fieldId": "previous_state",
+              "fieldValue": "={{ $('Normalize Task Status Event').first().json.old_record }}"
+            },
+            {
+              "fieldId": "new_state",
+              "fieldValue": "={{ $('Normalize Task Status Event').first().json.new_record }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { transition: 'pending_review->in_review', first_review_at: $('Normalize Task Status Event').first().json.first_review_at, assigned_professional_id: $('Normalize Task Status Event').first().json.assigned_professional_id, priority: $('Normalize Task Status Event').first().json.priority } }}"
+            }
+          ]
+        }
+      },
+      "id": "d71f8310-5368-4130-86dc-6d77c8fc2dbf",
+      "name": "Create Review Started Event",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        192
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "close-01",
+              "leftValue": "={{ $('Normalize Task Status Event').first().json.old_status }}",
+              "rightValue": "in_review",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "close-02",
+              "leftValue": "={{ $('Normalize Task Status Event').first().json.new_status }}",
+              "rightValue": "closed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1f552342-5a8c-48f7-a6f2-c82eb0be9d7a",
+      "name": "IF Task Closed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -800,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "events",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "entity_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Task Status Event').first().json.task_id }}"
+            },
+            {
+              "keyName": "event_type",
+              "condition": "eq",
+              "keyValue": "clinical_task.closed"
+            }
+          ]
+        }
+      },
+      "id": "29e8c0fa-45b5-49a8-8985-c53587386ff0",
+      "name": "Get Existing Closed Event",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        384
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "closedup",
+              "leftValue": "={{ !!$json.event_id }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d5eac729-9ba3-4d92-8393-211ca7ad4fd6",
+      "name": "IF Closed Event Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -352,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "events",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "entity_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Task Status Event').first().json.task_id }}"
+            },
+            {
+              "keyName": "event_type",
+              "condition": "eq",
+              "keyValue": "clinical_task.review_started"
+            }
+          ]
+        }
+      },
+      "id": "517ed1aa-dad2-42fb-adcc-e93ae2502388",
+      "name": "Get Review Event For Closure",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        432
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('Normalize Task Status Event').first().json.patient_id }}"
+            },
+            {
+              "fieldId": "event_type",
+              "fieldValue": "clinical_task.closed"
+            },
+            {
+              "fieldId": "entity_type",
+              "fieldValue": "clinical_task"
+            },
+            {
+              "fieldId": "entity_id",
+              "fieldValue": "={{ $('Normalize Task Status Event').first().json.task_id }}"
+            },
+            {
+              "fieldId": "causation_event_id",
+              "fieldValue": "={{ $('Get Review Event For Closure').first().json.event_id || $('Normalize Task Status Event').first().json.task_event_id }}"
+            },
+            {
+              "fieldId": "actor_type",
+              "fieldValue": "professional"
+            },
+            {
+              "fieldId": "actor_profile_id",
+              "fieldValue": "={{ $('Get Assigned Professional').first().json.profile_id }}"
+            },
+            {
+              "fieldId": "source_channel",
+              "fieldValue": "web"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Create CLN02 Workflow Run').first().json.id }}"
+            },
+            {
+              "fieldId": "previous_state",
+              "fieldValue": "={{ $('Normalize Task Status Event').first().json.old_record }}"
+            },
+            {
+              "fieldId": "new_state",
+              "fieldValue": "={{ $('Normalize Task Status Event').first().json.new_record }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { transition: 'in_review->closed', first_review_at: $('Normalize Task Status Event').first().json.first_review_at, closed_at: $('Normalize Task Status Event').first().json.closed_at, final_decision: $('Normalize Task Status Event').first().json.final_decision, review_note: $('Normalize Task Status Event').first().json.review_note, assigned_professional_id: $('Normalize Task Status Event').first().json.assigned_professional_id, source_alert_id: $('Normalize Task Status Event').first().json.source_alert_id } }}"
+            }
+          ]
+        }
+      },
+      "id": "e0b16709-d07e-4a95-9824-b3adbc0c67ab",
+      "name": "Create Clinical Task Closed Event",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        96,
+        432
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create CLN02 Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { processed: true, event_type: 'clinical_task.review_started', task_id: $('Normalize Task Status Event').first().json.task_id, first_review_at: $('Normalize Task Status Event').first().json.first_review_at } }}"
+            }
+          ]
+        }
+      },
+      "id": "9c5f99bf-8c45-4be1-ab0f-913b749c41b1",
+      "name": "Close CLN02 Run - Review Started",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        192
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create CLN02 Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { processed: true, event_type: 'clinical_task.closed', task_id: $('Normalize Task Status Event').first().json.task_id, final_decision: $('Normalize Task Status Event').first().json.final_decision, closed_at: $('Normalize Task Status Event').first().json.closed_at } }}"
+            }
+          ]
+        }
+      },
+      "id": "3c2575d3-0860-4cbc-ab5a-1f8c0a801d52",
+      "name": "Close CLN02 Run - Task Closed",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        320,
+        432
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create CLN02 Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { processed: false, duplicate: true, task_id: $('Normalize Task Status Event').first().json.task_id, transition: $('Normalize Task Status Event').first().json.old_status + '->' + $('Normalize Task Status Event').first().json.new_status } }}"
+            }
+          ]
+        }
+      },
+      "id": "1db352dc-b57c-49d9-a600-085adb480d77",
+      "name": "Close CLN02 Run - Duplicate",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create CLN02 Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { processed: false, ignored_transition: true, task_id: $('Normalize Task Status Event').first().json.task_id, old_status: $('Normalize Task Status Event').first().json.old_status, new_status: $('Normalize Task Status Event').first().json.new_status } }}"
+            }
+          ]
+        }
+      },
+      "id": "7cba61ed-a9ec-4a56-aeb2-254847d5d195",
+      "name": "Close CLN02 Run - Ignored",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        576
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Clinical Task Status Changed": {
+      "main": [
+        [
+          {
+            "node": "Normalize Task Status Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Task Status Event": {
+      "main": [
+        [
+          {
+            "node": "Create CLN02 Workflow Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create CLN02 Workflow Run": {
+      "main": [
+        [
+          {
+            "node": "Get Assigned Professional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Assigned Professional": {
+      "main": [
+        [
+          {
+            "node": "IF Review Started",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Review Started": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Review Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF Task Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Review Event": {
+      "main": [
+        [
+          {
+            "node": "IF Review Event Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Review Event Exists": {
+      "main": [
+        [
+          {
+            "node": "Close CLN02 Run - Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Review Started Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Review Started Event": {
+      "main": [
+        [
+          {
+            "node": "Close CLN02 Run - Review Started",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Task Closed": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Closed Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Close CLN02 Run - Ignored",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Closed Event": {
+      "main": [
+        [
+          {
+            "node": "IF Closed Event Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Closed Event Exists": {
+      "main": [
+        [
+          {
+            "node": "Close CLN02 Run - Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Review Event For Closure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Review Event For Closure": {
+      "main": [
+        [
+          {
+            "node": "Create Clinical Task Closed Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Clinical Task Closed Event": {
+      "main": [
+        [
+          {
+            "node": "Close CLN02 Run - Task Closed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "8125bd70-e12d-4d5c-a2bb-b5c4ea1885f3",
+  "meta": {
+    "instanceId": "0d2cd94368d1529af8272aa69d8382380c81a77cb395fbe48cc01cea4f06e2f0"
+  },
+  "nodeGroups": [],
+  "id": "gzMRiUKZ4IV5O8Nr",
+  "tags": []
+}

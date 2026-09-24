@@ -1,0 +1,529 @@
+{
+  "name": "Flow-ING-01_GlucoseReadingCreated",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trackyglu-glucose-reading-created",
+        "options": {}
+      },
+      "id": "9a627b41-08c4-4334-b6bf-a6a3de45b33a",
+      "name": "Webhook - Glucose Reading Created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        -272
+      ],
+      "webhookId": "trackyglu-glucose-reading-created"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a01",
+              "name": "event_id",
+              "value": "={{ $json.body.record.event_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a02",
+              "name": "patient_id",
+              "value": "={{ $json.body.record.patient_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a03",
+              "name": "event_type",
+              "value": "glucose_reading.created",
+              "type": "string"
+            },
+            {
+              "id": "a04",
+              "name": "entity_type",
+              "value": "glucose_reading",
+              "type": "string"
+            },
+            {
+              "id": "a05",
+              "name": "entity_id",
+              "value": "={{ $json.body.record.id }}",
+              "type": "string"
+            },
+            {
+              "id": "a06",
+              "name": "glucose_value",
+              "value": "={{ $json.body.record.glucose_value }}",
+              "type": "number"
+            },
+            {
+              "id": "a07",
+              "name": "unit",
+              "value": "={{ $json.body.record.unit }}",
+              "type": "string"
+            },
+            {
+              "id": "a08",
+              "name": "measurement_context",
+              "value": "={{ $json.body.record.measurement_context }}",
+              "type": "string"
+            },
+            {
+              "id": "a09",
+              "name": "measurement_source",
+              "value": "={{ $json.body.record.measurement_source }}",
+              "type": "string"
+            },
+            {
+              "id": "a10",
+              "name": "measured_at",
+              "value": "={{ $json.body.record.measured_at }}",
+              "type": "string"
+            },
+            {
+              "id": "a11",
+              "name": "source_channel",
+              "value": "={{ $json.body.record.source_channel }}",
+              "type": "string"
+            },
+            {
+              "id": "a12",
+              "name": "actor_type",
+              "value": "={{ $json.body.record.recorded_by_actor_type }}",
+              "type": "string"
+            },
+            {
+              "id": "a13",
+              "name": "actor_profile_id",
+              "value": "={{ $json.body.record.recorded_by_profile_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a14",
+              "name": "created_at",
+              "value": "={{ $json.body.record.created_at }}",
+              "type": "string"
+            },
+            {
+              "id": "a15",
+              "name": "source_table",
+              "value": "={{ $json.body.table }}",
+              "type": "string"
+            },
+            {
+              "id": "a16",
+              "name": "source_schema",
+              "value": "={{ $json.body.schema }}",
+              "type": "string"
+            },
+            {
+              "id": "a17",
+              "name": "source_operation",
+              "value": "={{ $json.body.type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0d162e92-a1fa-4fc6-8556-a0a881e19822",
+      "name": "Normalize Glucose Reading Event",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "workflow_runs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "workflow_key",
+              "fieldValue": "Flow-ING-01_GlucoseReadingCreated"
+            },
+            {
+              "fieldId": "workflow_name",
+              "fieldValue": "Flow-ING-01_GlucoseReadingCreated"
+            },
+            {
+              "fieldId": "workflow_version",
+              "fieldValue": "1.0.0"
+            },
+            {
+              "fieldId": "n8n_execution_id",
+              "fieldValue": "={{ $execution.id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "running"
+            },
+            {
+              "fieldId": "trigger_event_id",
+              "fieldValue": "={{ $json.event_id }}"
+            },
+            {
+              "fieldId": "input_payload",
+              "fieldValue": "={{ $json }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -272
+      ],
+      "id": "8359a9c9-dedc-41e5-891c-d4ee25680345",
+      "name": "Create Workflow Run",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "event_id",
+              "fieldValue": "={{ $('Normalize Glucose Reading Event').first().json.event_id }}"
+            },
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('Normalize Glucose Reading Event').first().json.patient_id }}"
+            },
+            {
+              "fieldId": "event_type",
+              "fieldValue": "={{ $('Normalize Glucose Reading Event').first().json.event_type }}"
+            },
+            {
+              "fieldId": "entity_type",
+              "fieldValue": "={{ $('Normalize Glucose Reading Event').first().json.entity_type }}"
+            },
+            {
+              "fieldId": "entity_id",
+              "fieldValue": "={{ $('Normalize Glucose Reading Event').first().json.entity_id }}"
+            },
+            {
+              "fieldId": "actor_type",
+              "fieldValue": "={{ $('Normalize Glucose Reading Event').first().json.actor_type }}"
+            },
+            {
+              "fieldId": "actor_profile_id",
+              "fieldValue": "={{ $('Normalize Glucose Reading Event').first().json.actor_profile_id }}"
+            },
+            {
+              "fieldId": "source_channel",
+              "fieldValue": "={{ $('Normalize Glucose Reading Event').first().json.source_channel }}"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Create Workflow Run').first().json.id }}"
+            },
+            {
+              "fieldId": "new_state",
+              "fieldValue": "={{ $('Normalize Glucose Reading Event').first().json }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { source_table: $('Normalize Glucose Reading Event').first().json.source_table, source_schema: $('Normalize Glucose Reading Event').first().json.source_schema, source_operation: $('Normalize Glucose Reading Event').first().json.source_operation, measurement_source: $('Normalize Glucose Reading Event').first().json.measurement_source, measurement_context: $('Normalize Glucose Reading Event').first().json.measurement_context } }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        416,
+        -272
+      ],
+      "id": "0d56385c-fc56-4b51-9f2f-95c0fc7419db",
+      "name": "Create Event",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ $json }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -272
+      ],
+      "id": "b7089ce9-01e1-40ab-bd3c-ea41ecdbc288",
+      "name": "Close Workflow Run",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "XPdzfAh2G2ZqfIvg",
+          "mode": "list",
+          "cachedResultName": "Flow-ADH-01_MedirAdherencia",
+          "cachedResultUrl": "/workflow/XPdzfAh2G2ZqfIvg"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1088,
+        -368
+      ],
+      "id": "b18296fd-adc8-4d4d-9dcb-1f6bccc34431",
+      "name": "Execute Flow-ADH-01"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "down-01",
+              "name": "patient_id",
+              "value": "={{ $('Normalize Glucose Reading Event').first().json.patient_id }}",
+              "type": "string"
+            },
+            {
+              "id": "down-02",
+              "name": "event_id",
+              "value": "={{ $('Normalize Glucose Reading Event').first().json.event_id }}",
+              "type": "string"
+            },
+            {
+              "id": "down-03",
+              "name": "source_entity_id",
+              "value": "={{ $('Normalize Glucose Reading Event').first().json.entity_id }}",
+              "type": "string"
+            },
+            {
+              "id": "down-04",
+              "name": "ingestion_workflow_run_id",
+              "value": "={{ $('Create Workflow Run').first().json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "down-05",
+              "name": "glucose_value",
+              "value": "={{ $('Normalize Glucose Reading Event').first().json.glucose_value }}",
+              "type": "number"
+            },
+            {
+              "id": "down-06",
+              "name": "unit",
+              "value": "={{ $('Normalize Glucose Reading Event').first().json.unit }}",
+              "type": "string"
+            },
+            {
+              "id": "down-07",
+              "name": "measurement_context",
+              "value": "={{ $('Normalize Glucose Reading Event').first().json.measurement_context }}",
+              "type": "string"
+            },
+            {
+              "id": "down-08",
+              "name": "measurement_source",
+              "value": "={{ $('Normalize Glucose Reading Event').first().json.measurement_source }}",
+              "type": "string"
+            },
+            {
+              "id": "down-09",
+              "name": "measured_at",
+              "value": "={{ $('Normalize Glucose Reading Event').first().json.measured_at }}",
+              "type": "string"
+            },
+            {
+              "id": "down-10",
+              "name": "source_channel",
+              "value": "={{ $('Normalize Glucose Reading Event').first().json.source_channel }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        864,
+        -272
+      ],
+      "id": "7451d2d9-b8b6-4deb-b6f1-a980fa725ac1",
+      "name": "Prepare Downstream Input"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "scfjncT28IXtB516",
+          "mode": "list",
+          "cachedResultName": "Flow-ALR-01_TriageAlertas",
+          "cachedResultUrl": "/workflow/scfjncT28IXtB516"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1088,
+        -176
+      ],
+      "id": "026003a4-0ce9-43a4-a949-f7d1f9942f64",
+      "name": "Execute Flow-ALR-01"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Glucose Reading Created": {
+      "main": [
+        [
+          {
+            "node": "Normalize Glucose Reading Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Glucose Reading Event": {
+      "main": [
+        [
+          {
+            "node": "Create Workflow Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Workflow Run": {
+      "main": [
+        [
+          {
+            "node": "Create Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event": {
+      "main": [
+        [
+          {
+            "node": "Close Workflow Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Close Workflow Run": {
+      "main": [
+        [
+          {
+            "node": "Prepare Downstream Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Downstream Input": {
+      "main": [
+        [
+          {
+            "node": "Execute Flow-ADH-01",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute Flow-ALR-01",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1e5d5d72-9c57-4b4f-b217-31800b7fa21d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0d2cd94368d1529af8272aa69d8382380c81a77cb395fbe48cc01cea4f06e2f0"
+  },
+  "nodeGroups": [],
+  "id": "JjupsXTIv510PHna",
+  "tags": []
+}

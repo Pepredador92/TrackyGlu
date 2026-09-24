@@ -2,9 +2,10 @@ import { LogOut } from 'lucide-react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from './useAuth'
 import './AuthState.css'
+import AccountSetup from '../../pages/AccountSetup'
 
 export function ProtectedRoute() {
-  const { session, profile, isLoading, authError, signOut } = useAuth()
+  const { session, profile, isLoading, authError, signOut, refreshProfile } = useAuth()
   const location = useLocation()
 
   if (isLoading) {
@@ -15,9 +16,11 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
-  if (!profile || authError) {
-    return <AccountNotConfigured onSignOut={signOut} />
-  }
+  if (authError) return <main className="auth-state"><div className="auth-state__content"><h1>No pudimos cargar tu cuenta</h1><p>Revisa tu conexión e intenta de nuevo.</p><button className="auth-state__button" onClick={() => void refreshProfile()}>Reintentar</button></div></main>
+  if (!profile) return <AccountSetup />
+  if (profile.role === 'patient' && !profile.onboardingCompletedAt && !['/mi-historia', '/mi-perfil'].includes(location.pathname)) return <Navigate to="/mi-historia" replace />
+  if (profile.role === 'professional' && !profile.onboardingCompletedAt && location.pathname !== '/professional/profile') return <Navigate to="/professional/profile" replace />
+  if (profile.role === 'admin') return <AccountNotConfigured onSignOut={signOut} />
 
   return <Outlet />
 }

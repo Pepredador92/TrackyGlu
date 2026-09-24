@@ -5,4 +5,6 @@ export interface Profile {
   userId: string
   role: UserRole
   displayName: string | null
+  entityId: string | null
+  onboardingCompletedAt: string | null
 }

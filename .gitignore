@@ -15,6 +15,9 @@ dist-ssr
 .env.local
 .env.*.local
 !.env.example
+playwright-report
+test-results
+.local-test-accounts.json
 
 # Editor directories and files
 .vscode/*

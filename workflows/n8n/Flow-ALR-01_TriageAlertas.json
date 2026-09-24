@@ -1,0 +1,675 @@
+{
+  "name": "Flow-ALR-01_TriageAlertas",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2368,
+        192
+      ],
+      "id": "620d0086-72a0-4787-a151-9835686b5bbe",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2368,
+        384
+      ],
+      "id": "a97b050b-d726-4f54-928e-dd9f78e751c6",
+      "name": "Manual Test"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "alrctx01",
+              "name": "patient_id",
+              "value": "={{ $json.patient_id || null }}",
+              "type": "string"
+            },
+            {
+              "id": "alrctx02",
+              "name": "source_event_id",
+              "value": "={{ $json.event_id || $json.source_event_id || null }}",
+              "type": "string"
+            },
+            {
+              "id": "alrctx03",
+              "name": "source_reading_id",
+              "value": "={{ $json.source_entity_id || $json.source_reading_id || $json.entity_id || null }}",
+              "type": "string"
+            },
+            {
+              "id": "alrctx04",
+              "name": "glucose_value",
+              "value": "={{ $json.glucose_value ?? null }}",
+              "type": "number"
+            },
+            {
+              "id": "alrctx05",
+              "name": "unit",
+              "value": "={{ $json.unit || 'mg/dL' }}",
+              "type": "string"
+            },
+            {
+              "id": "alrctx06",
+              "name": "measurement_context",
+              "value": "={{ $json.measurement_context || null }}",
+              "type": "string"
+            },
+            {
+              "id": "alrctx07",
+              "name": "measurement_source",
+              "value": "={{ $json.measurement_source || null }}",
+              "type": "string"
+            },
+            {
+              "id": "alrctx08",
+              "name": "measured_at",
+              "value": "={{ $json.measured_at || null }}",
+              "type": "string"
+            },
+            {
+              "id": "alrctx09",
+              "name": "source_channel",
+              "value": "={{ $json.source_channel || 'web' }}",
+              "type": "string"
+            },
+            {
+              "id": "alrctx10",
+              "name": "ingestion_workflow_run_id",
+              "value": "={{ $json.ingestion_workflow_run_id || null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2144,
+        288
+      ],
+      "id": "eab6026d-ea2c-4ffa-bd9d-e05a976eef00",
+      "name": "SET_ALR_Context"
+    },
+    {
+      "parameters": {
+        "tableId": "workflow_runs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "workflow_key",
+              "fieldValue": "Flow-ALR-01_TriageAlertas"
+            },
+            {
+              "fieldId": "workflow_name",
+              "fieldValue": "Flow-ALR-01_TriageAlertas"
+            },
+            {
+              "fieldId": "workflow_version",
+              "fieldValue": "1.0.0"
+            },
+            {
+              "fieldId": "n8n_execution_id",
+              "fieldValue": "={{ $execution.id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "running"
+            },
+            {
+              "fieldId": "trigger_event_id",
+              "fieldValue": "={{ $json.source_event_id || null }}"
+            },
+            {
+              "fieldId": "input_payload",
+              "fieldValue": "={{ $json }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1920,
+        288
+      ],
+      "id": "9e1f2387-b321-464f-8e75-e6243f5ed3da",
+      "name": "Create ALR Workflow Run",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('SET_ALR_Context').first().json;\n\nconst glucose = Number(ctx.glucose_value);\n\nlet shouldAlert = false;\nlet alertType = null;\nlet severity = null;\nlet reason = null;\nlet ruleKey = null;\nlet thresholdValue = null;\n\n/*\n  Regla ALR inicial deliberadamente conservadora.\n\n  Fuente del proyecto:\n  - \"manejo de adultos dm.pdf\" identifica glucosa >= 300 mg/dL\n    como un valor \"muy alto\".\n  - El proyecto exige que las alertas sean gestionables, trazables\n    y revisadas por un profesional.\n\n  IMPORTANTE:\n  No se agregan aquí umbrales de hipoglucemia ni una matriz completa\n  info/warning/critical porque los documentos actuales del proyecto\n  no definen esos cortes de forma suficiente para convertirlos en\n  reglas de software sin introducir supuestos externos.\n*/\n\nif (Number.isFinite(glucose) && glucose >= 300) {\n  shouldAlert = true;\n  alertType = 'glucose_very_high';\n  severity = 'warning';\n  ruleKey = 'ALR_GLUCOSE_GE_300';\n  thresholdValue = 300;\n  reason =\n    'Registro de glucosa >= 300 mg/dL. Se genera alerta operativa para revisión profesional.';\n}\n\nreturn [{\n  json: {\n    ...ctx,\n    should_alert: shouldAlert,\n    alert_type: alertType,\n    severity,\n    reason,\n    rule_key: ruleKey,\n    threshold_value: thresholdValue,\n    rule_version: '1.0.0'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1696,
+        288
+      ],
+      "id": "a725eee0-20b8-44f1-be50-8ed0901fae0e",
+      "name": "CODE_EvaluateAlertRule"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "if-should-alert",
+              "leftValue": "={{ $json.should_alert }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1472,
+        288
+      ],
+      "id": "99c5c655-e951-476f-939d-92e3e4aa808b",
+      "name": "IF Should Create Alert"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "alerts",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "source_event_id",
+              "condition": "eq",
+              "keyValue": "={{ $('CODE_EvaluateAlertRule').first().json.source_event_id }}"
+            },
+            {
+              "keyName": "alert_type",
+              "condition": "eq",
+              "keyValue": "={{ $('CODE_EvaluateAlertRule').first().json.alert_type }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        192
+      ],
+      "id": "a689be9a-9c2d-4304-91cf-91c38d6f5f0a",
+      "name": "Get Existing Alert",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "if-alert-exists",
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1024,
+        192
+      ],
+      "id": "b46c2f65-855a-4d4c-9cc9-286203207a0c",
+      "name": "IF Alert Exists"
+    },
+    {
+      "parameters": {
+        "tableId": "alerts",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('CODE_EvaluateAlertRule').first().json.patient_id }}"
+            },
+            {
+              "fieldId": "source_event_id",
+              "fieldValue": "={{ $('CODE_EvaluateAlertRule').first().json.source_event_id }}"
+            },
+            {
+              "fieldId": "source_reading_id",
+              "fieldValue": "={{ $('CODE_EvaluateAlertRule').first().json.source_reading_id }}"
+            },
+            {
+              "fieldId": "alert_type",
+              "fieldValue": "={{ $('CODE_EvaluateAlertRule').first().json.alert_type }}"
+            },
+            {
+              "fieldId": "severity",
+              "fieldValue": "={{ $('CODE_EvaluateAlertRule').first().json.severity }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "open"
+            },
+            {
+              "fieldId": "reason",
+              "fieldValue": "={{ $('CODE_EvaluateAlertRule').first().json.reason }}"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Create ALR Workflow Run').first().json.id }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { rule_key: $('CODE_EvaluateAlertRule').first().json.rule_key, rule_version: $('CODE_EvaluateAlertRule').first().json.rule_version, threshold_value: $('CODE_EvaluateAlertRule').first().json.threshold_value, glucose_value: $('CODE_EvaluateAlertRule').first().json.glucose_value, unit: $('CODE_EvaluateAlertRule').first().json.unit, measurement_context: $('CODE_EvaluateAlertRule').first().json.measurement_context, measurement_source: $('CODE_EvaluateAlertRule').first().json.measurement_source, measured_at: $('CODE_EvaluateAlertRule').first().json.measured_at, source_channel: $('CODE_EvaluateAlertRule').first().json.source_channel } }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        288
+      ],
+      "id": "5132e2ae-fbc1-468a-ac01-8383451a867d",
+      "name": "Create Alert",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "event_id",
+              "fieldValue": "={{ $('Create Alert').first().json.event_id }}"
+            },
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('CODE_EvaluateAlertRule').first().json.patient_id }}"
+            },
+            {
+              "fieldId": "event_type",
+              "fieldValue": "alert.created"
+            },
+            {
+              "fieldId": "entity_type",
+              "fieldValue": "alert"
+            },
+            {
+              "fieldId": "entity_id",
+              "fieldValue": "={{ $('Create Alert').first().json.id }}"
+            },
+            {
+              "fieldId": "causation_event_id",
+              "fieldValue": "={{ $('CODE_EvaluateAlertRule').first().json.source_event_id }}"
+            },
+            {
+              "fieldId": "actor_type",
+              "fieldValue": "system"
+            },
+            {
+              "fieldId": "source_channel",
+              "fieldValue": "n8n"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Create ALR Workflow Run').first().json.id }}"
+            },
+            {
+              "fieldId": "new_state",
+              "fieldValue": "={{ $('Create Alert').first().json }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { alert_type: $('CODE_EvaluateAlertRule').first().json.alert_type, severity: $('CODE_EvaluateAlertRule').first().json.severity, rule_key: $('CODE_EvaluateAlertRule').first().json.rule_key, source_reading_id: $('CODE_EvaluateAlertRule').first().json.source_reading_id } }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        288
+      ],
+      "id": "4ca6f5c4-ed47-4036-a8bc-ca2bfe731bc9",
+      "name": "Create Alert Event",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create ALR Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { alert_created: true, alert_id: $('Create Alert').first().json.id, alert_type: $('CODE_EvaluateAlertRule').first().json.alert_type, severity: $('CODE_EvaluateAlertRule').first().json.severity } }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        288
+      ],
+      "id": "2543b4c2-0a10-4a5f-9409-663d2b9a5c5a",
+      "name": "Close ALR Run - Alert Created",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create ALR Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { alert_created: false, duplicate: true, existing_alert_id: $('Get Existing Alert').first().json.id, alert_type: $('CODE_EvaluateAlertRule').first().json.alert_type } }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        96
+      ],
+      "id": "c2545c85-c805-44d9-a2af-496722c96b1f",
+      "name": "Close ALR Run - Duplicate",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create ALR Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { alert_created: false, reason: 'no_rule_matched', glucose_value: $('CODE_EvaluateAlertRule').first().json.glucose_value } }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        384
+      ],
+      "id": "7faf2579-1084-4073-a680-a05dd3696040",
+      "name": "Close ALR Run - No Alert",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "SET_ALR_Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Test": {
+      "main": [
+        [
+          {
+            "node": "SET_ALR_Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET_ALR_Context": {
+      "main": [
+        [
+          {
+            "node": "Create ALR Workflow Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create ALR Workflow Run": {
+      "main": [
+        [
+          {
+            "node": "CODE_EvaluateAlertRule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE_EvaluateAlertRule": {
+      "main": [
+        [
+          {
+            "node": "IF Should Create Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Should Create Alert": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Close ALR Run - No Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Alert": {
+      "main": [
+        [
+          {
+            "node": "IF Alert Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Alert Exists": {
+      "main": [
+        [
+          {
+            "node": "Close ALR Run - Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Alert": {
+      "main": [
+        [
+          {
+            "node": "Create Alert Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Alert Event": {
+      "main": [
+        [
+          {
+            "node": "Close ALR Run - Alert Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "75ba1251-6518-48af-bf5e-d7e963d67cce",
+  "meta": {
+    "instanceId": "0d2cd94368d1529af8272aa69d8382380c81a77cb395fbe48cc01cea4f06e2f0"
+  },
+  "nodeGroups": [],
+  "id": "scfjncT28IXtB516",
+  "tags": []
+}

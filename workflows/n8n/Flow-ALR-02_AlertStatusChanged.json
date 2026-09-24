@@ -1,0 +1,629 @@
+{
+  "name": "Flow-ALR-02_AlertStatusChanged",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trackyglu-alert-status-changed",
+        "options": {}
+      },
+      "id": "64287964-968d-44e3-ace6-6dd0c47a254b",
+      "name": "Webhook - Alert Status Changed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1680,
+        192
+      ],
+      "webhookId": "trackyglu-alert-status-changed"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "norm01",
+              "name": "alert_id",
+              "value": "={{ $json.body.record.id }}",
+              "type": "string"
+            },
+            {
+              "id": "norm02",
+              "name": "alert_event_id",
+              "value": "={{ $json.body.record.event_id }}",
+              "type": "string"
+            },
+            {
+              "id": "norm03",
+              "name": "patient_id",
+              "value": "={{ $json.body.record.patient_id }}",
+              "type": "string"
+            },
+            {
+              "id": "norm04",
+              "name": "alert_type",
+              "value": "={{ $json.body.record.alert_type }}",
+              "type": "string"
+            },
+            {
+              "id": "norm05",
+              "name": "severity",
+              "value": "={{ $json.body.record.severity }}",
+              "type": "string"
+            },
+            {
+              "id": "norm06",
+              "name": "old_status",
+              "value": "={{ $json.body.old_record.status }}",
+              "type": "string"
+            },
+            {
+              "id": "norm07",
+              "name": "new_status",
+              "value": "={{ $json.body.record.status }}",
+              "type": "string"
+            },
+            {
+              "id": "norm08",
+              "name": "acknowledged_by_professional_id",
+              "value": "={{ $json.body.record.acknowledged_by_professional_id }}",
+              "type": "string"
+            },
+            {
+              "id": "norm09",
+              "name": "acknowledged_at",
+              "value": "={{ $json.body.record.acknowledged_at }}",
+              "type": "string"
+            },
+            {
+              "id": "norm10",
+              "name": "old_record",
+              "value": "={{ $json.body.old_record }}",
+              "type": "object"
+            },
+            {
+              "id": "norm11",
+              "name": "new_record",
+              "value": "={{ $json.body.record }}",
+              "type": "object"
+            },
+            {
+              "id": "norm12",
+              "name": "source_operation",
+              "value": "={{ $json.body.type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "68d65098-e16c-4892-8c2d-c590872e4a3e",
+      "name": "Normalize Alert Status Event",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1456,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "workflow_runs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "workflow_key",
+              "fieldValue": "Flow-ALR-02_AlertStatusChanged"
+            },
+            {
+              "fieldId": "workflow_name",
+              "fieldValue": "Flow-ALR-02_AlertStatusChanged"
+            },
+            {
+              "fieldId": "workflow_version",
+              "fieldValue": "1.0.0"
+            },
+            {
+              "fieldId": "n8n_execution_id",
+              "fieldValue": "={{ $execution.id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "running"
+            },
+            {
+              "fieldId": "trigger_event_id",
+              "fieldValue": "={{ $json.alert_event_id }}"
+            },
+            {
+              "fieldId": "input_payload",
+              "fieldValue": "={{ $json }}"
+            }
+          ]
+        }
+      },
+      "id": "a5c521a7-1cb7-4a0d-993a-dc3e55ba60c6",
+      "name": "Create ALR02 Workflow Run",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        192
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "tr01",
+              "leftValue": "={{ $('Normalize Alert Status Event').first().json.old_status }}",
+              "rightValue": "open",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "tr02",
+              "leftValue": "={{ $('Normalize Alert Status Event').first().json.new_status }}",
+              "rightValue": "acknowledged",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "56fa1624-2564-4cf3-af3e-9296f3cd7016",
+      "name": "IF Open to Acknowledged",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1008,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "professionals",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Alert Status Event').first().json.acknowledged_by_professional_id }}"
+            }
+          ]
+        }
+      },
+      "id": "f0237a5a-1c3d-486f-b589-1bdb20accbea",
+      "name": "Get Acknowledging Professional",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -784,
+        96
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "events",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "entity_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Alert Status Event').first().json.alert_id }}"
+            },
+            {
+              "keyName": "event_type",
+              "condition": "eq",
+              "keyValue": "alert.acknowledged"
+            }
+          ]
+        }
+      },
+      "id": "5488d054-fa29-4890-afc7-9ebeec8bcfc8",
+      "name": "Get Existing ACK Event",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        96
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dup01",
+              "leftValue": "={{ !!$json.event_id }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f9c74cad-1644-4e04-8085-2ec11b8a8d4b",
+      "name": "IF ACK Event Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -336,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('Normalize Alert Status Event').first().json.patient_id }}"
+            },
+            {
+              "fieldId": "event_type",
+              "fieldValue": "alert.acknowledged"
+            },
+            {
+              "fieldId": "entity_type",
+              "fieldValue": "alert"
+            },
+            {
+              "fieldId": "entity_id",
+              "fieldValue": "={{ $('Normalize Alert Status Event').first().json.alert_id }}"
+            },
+            {
+              "fieldId": "causation_event_id",
+              "fieldValue": "={{ $('Normalize Alert Status Event').first().json.alert_event_id }}"
+            },
+            {
+              "fieldId": "actor_type",
+              "fieldValue": "professional"
+            },
+            {
+              "fieldId": "actor_profile_id",
+              "fieldValue": "={{ $('Get Acknowledging Professional').first().json.profile_id }}"
+            },
+            {
+              "fieldId": "source_channel",
+              "fieldValue": "web"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Create ALR02 Workflow Run').first().json.id }}"
+            },
+            {
+              "fieldId": "previous_state",
+              "fieldValue": "={{ $('Normalize Alert Status Event').first().json.old_record }}"
+            },
+            {
+              "fieldId": "new_state",
+              "fieldValue": "={{ $('Normalize Alert Status Event').first().json.new_record }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { transition: 'open->acknowledged', alert_type: $('Normalize Alert Status Event').first().json.alert_type, severity: $('Normalize Alert Status Event').first().json.severity, acknowledged_at: $('Normalize Alert Status Event').first().json.acknowledged_at, acknowledged_by_professional_id: $('Normalize Alert Status Event').first().json.acknowledged_by_professional_id } }}"
+            }
+          ]
+        }
+      },
+      "id": "94c9b153-d23c-4318-a7d4-3d564836156e",
+      "name": "Create ACK Event",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        192
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create ALR02 Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { processed: true, event_type: 'alert.acknowledged', alert_id: $('Normalize Alert Status Event').first().json.alert_id } }}"
+            }
+          ]
+        }
+      },
+      "id": "7c7251f2-d92e-4360-bc6f-548592c24df3",
+      "name": "Close ALR02 Run - ACK",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        112,
+        192
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create ALR02 Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { processed: false, duplicate: true, alert_id: $('Normalize Alert Status Event').first().json.alert_id, existing_event_id: $('Get Existing ACK Event').first().json.event_id } }}"
+            }
+          ]
+        }
+      },
+      "id": "c157b03f-d93f-4d0a-9bd7-7ee33b11f3ba",
+      "name": "Close ALR02 Run - Duplicate",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create ALR02 Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { processed: false, ignored_transition: true, old_status: $('Normalize Alert Status Event').first().json.old_status, new_status: $('Normalize Alert Status Event').first().json.new_status } }}"
+            }
+          ]
+        }
+      },
+      "id": "c44ac84a-bad3-48d7-b139-009cf3cbc99d",
+      "name": "Close ALR02 Run - Ignored",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -784,
+        288
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Alert Status Changed": {
+      "main": [
+        [
+          {
+            "node": "Normalize Alert Status Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Alert Status Event": {
+      "main": [
+        [
+          {
+            "node": "Create ALR02 Workflow Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create ALR02 Workflow Run": {
+      "main": [
+        [
+          {
+            "node": "IF Open to Acknowledged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Open to Acknowledged": {
+      "main": [
+        [
+          {
+            "node": "Get Acknowledging Professional",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Close ALR02 Run - Ignored",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Acknowledging Professional": {
+      "main": [
+        [
+          {
+            "node": "Get Existing ACK Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing ACK Event": {
+      "main": [
+        [
+          {
+            "node": "IF ACK Event Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF ACK Event Exists": {
+      "main": [
+        [
+          {
+            "node": "Close ALR02 Run - Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create ACK Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create ACK Event": {
+      "main": [
+        [
+          {
+            "node": "Close ALR02 Run - ACK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3dc97785-ab26-49df-8bfe-f9f5db101e01",
+  "meta": {
+    "instanceId": "0d2cd94368d1529af8272aa69d8382380c81a77cb395fbe48cc01cea4f06e2f0"
+  },
+  "nodeGroups": [],
+  "id": "SXvOExwZo4m5dum4",
+  "tags": []
+}

@@ -8,6 +8,7 @@ export interface AuthContextValue {
   isLoading: boolean
   authError: boolean
   signOut: () => Promise<void>
+  refreshProfile: () => Promise<Profile | null>
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)

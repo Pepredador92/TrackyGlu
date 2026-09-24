@@ -1,0 +1,771 @@
+{
+  "name": "Flow-ADH-01_MedirAdherencia",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3584,
+        544
+      ],
+      "id": "a5466ab6-450a-4edd-8bb4-85d5e87814bd",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3584,
+        736
+      ],
+      "id": "43677b14-a561-4ea0-acbe-e30c8637473a",
+      "name": "Manual Test"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ctx01",
+              "name": "patient_id",
+              "value": "={{ $json.patient_id || '5362f8a4-f4f1-4587-a410-7d10a02bf812' }}",
+              "type": "string"
+            },
+            {
+              "id": "ctx02",
+              "name": "causation_event_id",
+              "value": "={{ $json.event_id || $json.causation_event_id || null }}",
+              "type": "string"
+            },
+            {
+              "id": "ctx03",
+              "name": "period_end_date",
+              "value": "={{ $now.setZone('America/Mexico_City').toFormat('yyyy-MM-dd') }}",
+              "type": "string"
+            },
+            {
+              "id": "ctx04",
+              "name": "timezone",
+              "value": "America/Mexico_City",
+              "type": "string"
+            },
+            {
+              "id": "ctx05",
+              "name": "abandonment_threshold_days",
+              "value": 7,
+              "type": "number"
+            },
+            {
+              "id": "ctx06",
+              "name": "recent_cutoff_iso",
+              "value": "={{ new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3360,
+        656
+      ],
+      "id": "fe2bcb8d-ff6c-4fa9-ae20-ea6d70bfaa84",
+      "name": "SET_ADH_Context"
+    },
+    {
+      "parameters": {
+        "tableId": "workflow_runs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "workflow_key",
+              "fieldValue": "Flow-ADH-01_MedirAdherencia"
+            },
+            {
+              "fieldId": "workflow_name",
+              "fieldValue": "Flow-ADH-01_MedirAdherencia"
+            },
+            {
+              "fieldId": "workflow_version",
+              "fieldValue": "2.0.0"
+            },
+            {
+              "fieldId": "n8n_execution_id",
+              "fieldValue": "={{ $execution.id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "running"
+            },
+            {
+              "fieldId": "trigger_event_id",
+              "fieldValue": "={{ $json.causation_event_id || null }}"
+            },
+            {
+              "fieldId": "input_payload",
+              "fieldValue": "={{ $json }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -3136,
+        656
+      ],
+      "id": "51bc476b-40f9-4b87-8b7c-9e0c03c3a8f1",
+      "name": "Create ADH Workflow Run",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "glucose_readings",
+        "limit": 1,
+        "orderBy": "measured_at.desc",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "patient_id",
+              "condition": "eq",
+              "keyValue": "={{ $('SET_ADH_Context').first().json.patient_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2912,
+        656
+      ],
+      "id": "693faf62-0487-4b2b-b81d-c5d18f169420",
+      "name": "Get Latest Reading",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "glucose_readings",
+        "returnAll": true,
+        "orderBy": "measured_at.asc",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "patient_id",
+              "condition": "eq",
+              "keyValue": "={{ $('SET_ADH_Context').first().json.patient_id }}"
+            },
+            {
+              "keyName": "measured_at",
+              "condition": "gte",
+              "keyValue": "={{ $('SET_ADH_Context').first().json.recent_cutoff_iso }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2688,
+        656
+      ],
+      "id": "2b0c1415-3a02-411c-a462-2779b01fe3e7",
+      "name": "Get Recent Readings",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const readings = $input.all()\n  .map(item => item.json)\n  .filter(r => r && r.measured_at && r.patient_id);\n\nconst ctx = $('SET_ADH_Context').first().json;\nconst latest = $('Get Latest Reading').first()?.json ?? {};\n\nconst patientId = String(ctx.patient_id);\nconst periodEndDate = String(ctx.period_end_date);\nconst timezone = String(ctx.timezone || 'America/Mexico_City');\nconst windowDaysList = [7, 14, 30];\nconst abandonmentThresholdDays = Number(ctx.abandonment_threshold_days || 7);\nconst workflowRunId = $('Create ADH Workflow Run').first().json.id;\n\nfunction localDateFromIso(iso, tz) {\n  if (!iso) return null;\n  const d = new Date(iso);\n  if (Number.isNaN(d.getTime())) return null;\n\n  const parts = new Intl.DateTimeFormat('en-CA', {\n    timeZone: tz,\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit',\n  }).formatToParts(d);\n\n  const map = {};\n  for (const p of parts) {\n    if (p.type !== 'literal') map[p.type] = p.value;\n  }\n  return `${map.year}-${map.month}-${map.day}`;\n}\n\nfunction parseDateOnly(dateStr) {\n  const [y, m, d] = String(dateStr).split('-').map(Number);\n  return new Date(Date.UTC(y, m - 1, d));\n}\n\nfunction formatDateOnly(dateObj) {\n  return dateObj.toISOString().slice(0, 10);\n}\n\nfunction addDays(dateObj, days) {\n  const d = new Date(dateObj.getTime());\n  d.setUTCDate(d.getUTCDate() + days);\n  return d;\n}\n\nfunction diffDays(dateA, dateB) {\n  return Math.round((dateA.getTime() - dateB.getTime()) / 86400000);\n}\n\nfunction roundTo(value, decimals) {\n  const factor = 10 ** decimals;\n  return Math.round(value * factor) / factor;\n}\n\nfunction buildWindowDates(startDateStr, endDateStr) {\n  const start = parseDateOnly(startDateStr);\n  const end = parseDateOnly(endDateStr);\n  const dates = [];\n  let cursor = new Date(start.getTime());\n\n  while (cursor.getTime() <= end.getTime()) {\n    dates.push(formatDateOnly(cursor));\n    cursor = addDays(cursor, 1);\n  }\n  return dates;\n}\n\nfunction computeMaxRun(flags, targetValue) {\n  let maxRun = 0;\n  let current = 0;\n  for (const f of flags) {\n    if (f === targetValue) {\n      current += 1;\n      if (current > maxRun) maxRun = current;\n    } else {\n      current = 0;\n    }\n  }\n  return maxRun;\n}\n\nfunction computeCurrentStreak(flags) {\n  let streak = 0;\n  for (let i = flags.length - 1; i >= 0; i--) {\n    if (flags[i] === 1) streak += 1;\n    else break;\n  }\n  return streak;\n}\n\n// La tabla glucose_readings ya garantiza event_id único.\n// Aun así, deduplicamos defensivamente.\nconst dedup = new Map();\n\nfor (const r of readings) {\n  if (String(r.patient_id) !== patientId) continue;\n\n  const key = r.event_id || r.id;\n  if (!key || dedup.has(key)) continue;\n\n  const localDate = localDateFromIso(r.measured_at, timezone);\n  if (!localDate || localDate > periodEndDate) continue;\n\n  dedup.set(key, {\n    ...r,\n    local_date: localDate,\n  });\n}\n\nconst safeReadings = [...dedup.values()]\n  .sort((a, b) => String(a.measured_at).localeCompare(String(b.measured_at)));\n\nconst periodEnd = parseDateOnly(periodEndDate);\n\nconst lastReadingAt =\n  latest && latest.measured_at\n    ? String(latest.measured_at)\n    : (safeReadings.length ? String(safeReadings[safeReadings.length - 1].measured_at) : null);\n\nconst lastReadingDate = lastReadingAt\n  ? localDateFromIso(lastReadingAt, timezone)\n  : null;\n\nlet daysSinceLastReading = null;\nlet abandonedFlag = false;\n\nif (lastReadingDate) {\n  daysSinceLastReading = diffDays(periodEnd, parseDateOnly(lastReadingDate));\n  abandonedFlag = daysSinceLastReading >= abandonmentThresholdDays;\n}\n\nconst calculatedAt = new Date().toISOString();\nconst output = [];\n\nfor (const windowDays of windowDaysList) {\n  const windowStart = formatDateOnly(addDays(periodEnd, -(windowDays - 1)));\n\n  const windowReadings = safeReadings.filter(\n    r => r.local_date >= windowStart && r.local_date <= periodEndDate\n  );\n\n  const activeDateSet = new Set(windowReadings.map(r => r.local_date));\n  const windowDates = buildWindowDates(windowStart, periodEndDate);\n  const flags = windowDates.map(d => activeDateSet.has(d) ? 1 : 0);\n\n  const daysWithReading = activeDateSet.size;\n  const totalReadings = windowReadings.length;\n\n  output.push({\n    json: {\n      patient_id: patientId,\n      period_end_date: periodEndDate,\n      window_days: windowDays,\n      days_with_reading: daysWithReading,\n      total_readings: totalReadings,\n      adherence_pct: roundTo((daysWithReading / windowDays) * 100, 1),\n      readings_per_week: roundTo((totalReadings / windowDays) * 7, 2),\n      max_streak_days: computeMaxRun(flags, 1),\n      current_streak_days: computeCurrentStreak(flags),\n      max_gap_days: computeMaxRun(flags, 0),\n      last_reading_at: lastReadingAt,\n      days_since_last_reading: daysSinceLastReading,\n      abandoned_flag: abandonedFlag,\n      retention_30_flag: windowDays === 30 ? daysWithReading > 0 : null,\n      workflow_run_id: workflowRunId,\n      calculated_at: calculatedAt,\n      causation_event_id: ctx.causation_event_id || null\n    }\n  });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2464,
+        656
+      ],
+      "id": "740221c7-fbbe-4fbf-9108-c3dad68c825b",
+      "name": "CODE_ComputeAdherence"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -2240,
+        656
+      ],
+      "id": "1ddc58bf-24ac-4bf9-9da5-5d49fdef1a15",
+      "name": "Loop Summaries"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "adherence_summary",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "patient_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Loop Summaries').item.json.patient_id }}"
+            },
+            {
+              "keyName": "window_days",
+              "condition": "eq",
+              "keyValue": "={{ $('Loop Summaries').item.json.window_days }}"
+            },
+            {
+              "keyName": "period_end_date",
+              "condition": "eq",
+              "keyValue": "={{ $('Loop Summaries').item.json.period_end_date }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2016,
+        656
+      ],
+      "id": "54e8b870-2d87-4a7c-8de7-bd9e3c02e7d3",
+      "name": "Get Existing Summary",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "if-summary-exists",
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1792,
+        656
+      ],
+      "id": "ae703596-e050-46ac-85de-99eac7788010",
+      "name": "IF Summary Exists"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "adherence_summary",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Existing Summary').item.json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('Loop Summaries').item.json.patient_id }}"
+            },
+            {
+              "fieldId": "window_days",
+              "fieldValue": "={{ $('Loop Summaries').item.json.window_days }}"
+            },
+            {
+              "fieldId": "period_end_date",
+              "fieldValue": "={{ $('Loop Summaries').item.json.period_end_date }}"
+            },
+            {
+              "fieldId": "days_with_reading",
+              "fieldValue": "={{ $('Loop Summaries').item.json.days_with_reading }}"
+            },
+            {
+              "fieldId": "total_readings",
+              "fieldValue": "={{ $('Loop Summaries').item.json.total_readings }}"
+            },
+            {
+              "fieldId": "adherence_pct",
+              "fieldValue": "={{ $('Loop Summaries').item.json.adherence_pct }}"
+            },
+            {
+              "fieldId": "readings_per_week",
+              "fieldValue": "={{ $('Loop Summaries').item.json.readings_per_week }}"
+            },
+            {
+              "fieldId": "max_streak_days",
+              "fieldValue": "={{ $('Loop Summaries').item.json.max_streak_days }}"
+            },
+            {
+              "fieldId": "current_streak_days",
+              "fieldValue": "={{ $('Loop Summaries').item.json.current_streak_days }}"
+            },
+            {
+              "fieldId": "max_gap_days",
+              "fieldValue": "={{ $('Loop Summaries').item.json.max_gap_days }}"
+            },
+            {
+              "fieldId": "last_reading_at",
+              "fieldValue": "={{ $('Loop Summaries').item.json.last_reading_at }}"
+            },
+            {
+              "fieldId": "days_since_last_reading",
+              "fieldValue": "={{ $('Loop Summaries').item.json.days_since_last_reading }}"
+            },
+            {
+              "fieldId": "abandoned_flag",
+              "fieldValue": "={{ $('Loop Summaries').item.json.abandoned_flag }}"
+            },
+            {
+              "fieldId": "retention_30_flag",
+              "fieldValue": "={{ $('Loop Summaries').item.json.retention_30_flag }}"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Loop Summaries').item.json.workflow_run_id }}"
+            },
+            {
+              "fieldId": "calculated_at",
+              "fieldValue": "={{ $('Loop Summaries').item.json.calculated_at }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1568,
+        560
+      ],
+      "id": "778c6d05-5d10-4b95-96a3-7a025f4ce9b5",
+      "name": "Update Adherence Summary",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "adherence_summary",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('Loop Summaries').item.json.patient_id }}"
+            },
+            {
+              "fieldId": "window_days",
+              "fieldValue": "={{ $('Loop Summaries').item.json.window_days }}"
+            },
+            {
+              "fieldId": "period_end_date",
+              "fieldValue": "={{ $('Loop Summaries').item.json.period_end_date }}"
+            },
+            {
+              "fieldId": "days_with_reading",
+              "fieldValue": "={{ $('Loop Summaries').item.json.days_with_reading }}"
+            },
+            {
+              "fieldId": "total_readings",
+              "fieldValue": "={{ $('Loop Summaries').item.json.total_readings }}"
+            },
+            {
+              "fieldId": "adherence_pct",
+              "fieldValue": "={{ $('Loop Summaries').item.json.adherence_pct }}"
+            },
+            {
+              "fieldId": "readings_per_week",
+              "fieldValue": "={{ $('Loop Summaries').item.json.readings_per_week }}"
+            },
+            {
+              "fieldId": "max_streak_days",
+              "fieldValue": "={{ $('Loop Summaries').item.json.max_streak_days }}"
+            },
+            {
+              "fieldId": "current_streak_days",
+              "fieldValue": "={{ $('Loop Summaries').item.json.current_streak_days }}"
+            },
+            {
+              "fieldId": "max_gap_days",
+              "fieldValue": "={{ $('Loop Summaries').item.json.max_gap_days }}"
+            },
+            {
+              "fieldId": "last_reading_at",
+              "fieldValue": "={{ $('Loop Summaries').item.json.last_reading_at }}"
+            },
+            {
+              "fieldId": "days_since_last_reading",
+              "fieldValue": "={{ $('Loop Summaries').item.json.days_since_last_reading }}"
+            },
+            {
+              "fieldId": "abandoned_flag",
+              "fieldValue": "={{ $('Loop Summaries').item.json.abandoned_flag }}"
+            },
+            {
+              "fieldId": "retention_30_flag",
+              "fieldValue": "={{ $('Loop Summaries').item.json.retention_30_flag }}"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Loop Summaries').item.json.workflow_run_id }}"
+            },
+            {
+              "fieldId": "calculated_at",
+              "fieldValue": "={{ $('Loop Summaries').item.json.calculated_at }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1568,
+        752
+      ],
+      "id": "79a3ec4c-593e-4c4d-b230-d1dc0cb4aaec",
+      "name": "Create Adherence Summary",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('Loop Summaries').item.json.patient_id }}"
+            },
+            {
+              "fieldId": "event_type",
+              "fieldValue": "adherence.calculated"
+            },
+            {
+              "fieldId": "entity_type",
+              "fieldValue": "adherence_summary"
+            },
+            {
+              "fieldId": "entity_id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldId": "causation_event_id",
+              "fieldValue": "={{ $('SET_ADH_Context').first().json.causation_event_id || null }}"
+            },
+            {
+              "fieldId": "actor_type",
+              "fieldValue": "system"
+            },
+            {
+              "fieldId": "source_channel",
+              "fieldValue": "n8n"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Create ADH Workflow Run').first().json.id }}"
+            },
+            {
+              "fieldId": "new_state",
+              "fieldValue": "={{ $json }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { window_days: $('Loop Summaries').item.json.window_days, period_end_date: $('Loop Summaries').item.json.period_end_date, adherence_pct: $('Loop Summaries').item.json.adherence_pct, abandoned_flag: $('Loop Summaries').item.json.abandoned_flag } }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1344,
+        736
+      ],
+      "id": "20beedae-3a41-42c1-afdf-3339480e7ab2",
+      "name": "Create Adherence Event",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "workflow_runs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create ADH Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { patient_id: $('SET_ADH_Context').first().json.patient_id, period_end_date: $('SET_ADH_Context').first().json.period_end_date, windows: [7,14,30] } }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2016,
+        464
+      ],
+      "id": "b5d94341-a43c-4b8d-be27-390ccb7c6f74",
+      "name": "Close ADH Workflow Run",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "SET_ADH_Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Test": {
+      "main": [
+        [
+          {
+            "node": "SET_ADH_Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET_ADH_Context": {
+      "main": [
+        [
+          {
+            "node": "Create ADH Workflow Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create ADH Workflow Run": {
+      "main": [
+        [
+          {
+            "node": "Get Latest Reading",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Latest Reading": {
+      "main": [
+        [
+          {
+            "node": "Get Recent Readings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Recent Readings": {
+      "main": [
+        [
+          {
+            "node": "CODE_ComputeAdherence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE_ComputeAdherence": {
+      "main": [
+        [
+          {
+            "node": "Loop Summaries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Summaries": {
+      "main": [
+        [
+          {
+            "node": "Close ADH Workflow Run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Existing Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Summary": {
+      "main": [
+        [
+          {
+            "node": "IF Summary Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Summary Exists": {
+      "main": [
+        [
+          {
+            "node": "Update Adherence Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Adherence Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Adherence Summary": {
+      "main": [
+        [
+          {
+            "node": "Create Adherence Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Adherence Summary": {
+      "main": [
+        [
+          {
+            "node": "Create Adherence Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Adherence Event": {
+      "main": [
+        [
+          {
+            "node": "Loop Summaries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "74765bb1-0a78-4ce7-9192-6f5631c2a09b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0d2cd94368d1529af8272aa69d8382380c81a77cb395fbe48cc01cea4f06e2f0"
+  },
+  "nodeGroups": [],
+  "id": "XPdzfAh2G2ZqfIvg",
+  "tags": []
+}
