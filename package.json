@@ -16,6 +16,8 @@
     "demo:local": "node scripts/seed-demo.mjs",
     "workflows:check": "node scripts/validate-workflows.mjs",
     "test:integration": "node tests/access.integration.mjs",
+    "test:objective-four": "node tests/objective-four.integration.mjs",
+    "test:objective-five": "node tests/objective-five.integration.mjs",
     "test:browser": "playwright test"
   },
   "dependencies": {

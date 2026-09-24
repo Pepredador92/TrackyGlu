@@ -156,6 +156,157 @@
   line-height: 1;
 }
 
+.clinical-task-card__context {
+  margin-top: 18px;
+  padding: 13px 14px;
+  background: #f7faf8;
+  border: 1px solid #dce9e3;
+  border-radius: 9px;
+}
+
+.clinical-task-card__context-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text);
+  font-size: 0.88rem;
+}
+
+.clinical-task-card__context-heading svg {
+  color: var(--color-primary);
+  flex: 0 0 auto;
+}
+
+.clinical-task-card__context-heading span {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.clinical-task-card__context-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 9px;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.clinical-task-card__context-missing {
+  margin: 9px 0 0;
+  color: #7d5b2a;
+  font-size: 0.79rem;
+  line-height: 1.4;
+}
+
+.clinical-task-card__ai-draft {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px;
+  background: #f6f7fb;
+  border: 1px solid #d9ddec;
+  border-radius: 9px;
+}
+
+.clinical-task-card__ai-draft--failed {
+  color: #7d3b3b;
+  background: #fff7f7;
+  border-color: #eccaca;
+}
+
+.clinical-task-card__ai-draft--failed p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.clinical-task-card__ai-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text);
+  font-size: 0.88rem;
+}
+
+.clinical-task-card__ai-heading svg {
+  color: #5e66a8;
+  flex: 0 0 auto;
+}
+
+.clinical-task-card__ai-heading span {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.clinical-task-card__ai-help {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.clinical-task-card__ai-draft textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 11px 12px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.91rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.clinical-task-card__ai-draft textarea:focus-visible {
+  outline: 3px solid #a9afe4;
+  outline-offset: 2px;
+  border-color: #5e66a8;
+}
+
+.clinical-task-card__ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.clinical-task-card__ai-actions button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 11px;
+  color: #4e568f;
+  background: var(--color-surface);
+  border: 1px solid #c7cce2;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.clinical-task-card__ai-actions button:hover:not(:disabled) {
+  border-color: #5e66a8;
+}
+
+.clinical-task-card__ai-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.clinical-task-card__ai-actions .clinical-task-card__ai-discard {
+  color: #a33f3f;
+  border-color: #d8aaaa;
+}
+
 .clinical-task-card__date {
   margin: 12px 0 0;
   color: var(--color-text-secondary);

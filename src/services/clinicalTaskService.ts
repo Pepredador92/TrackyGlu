@@ -4,6 +4,47 @@ export type ClinicalTaskStatus = 'pending_review' | 'draft_ready' | 'in_review' 
 export type ClinicalTaskDecision = 'approved' | 'modified' | 'cancelled'
 export type ClinicalTaskPriority = 'info' | 'warning' | 'critical'
 export type AiDraftStatus = 'not_requested' | 'pending' | 'generated' | 'failed'
+export type ClinicalAiDraftStatus = 'pending' | 'generated' | 'edited' | 'approved' | 'discarded' | 'failed'
+export type ClinicalAiDraftReviewStatus = 'edited' | 'approved' | 'discarded'
+export type ClinicalCaseContextStatus = 'prepared' | 'partial' | 'waiting_professional' | 'failed'
+
+export interface ClinicalCaseContextSnapshot {
+  alert: Record<string, unknown> | null
+  triggering_reading: Record<string, unknown> | null
+  history: {
+    revision?: number
+    completed_at?: string | null
+    updated_at?: string | null
+    data?: Record<string, unknown>
+  } | null
+  recent_readings: Array<Record<string, unknown>>
+  recent_daily_context: Array<Record<string, unknown>>
+  adherence_summaries: Array<Record<string, unknown>>
+}
+
+export interface ClinicalCaseContext {
+  id: string
+  status: ClinicalCaseContextStatus
+  contextVersion: string
+  missingData: string[]
+  preparedAt: string | null
+  snapshot: ClinicalCaseContextSnapshot
+}
+
+export interface ClinicalAiDraft {
+  id: string
+  status: ClinicalAiDraftStatus
+  draftText: string | null
+  structuredOutput: Record<string, unknown>
+  sourceKeys: string[]
+  model: string | null
+  provider: string
+  promptVersion: string
+  generatedAt: string | null
+  reviewedAt: string | null
+  reviewNote: string | null
+  errorMessage: string | null
+}
 
 export interface ProfessionalClinicalTask {
   id: string
@@ -25,6 +66,8 @@ export interface ProfessionalClinicalTask {
   alertReason: string | null
   glucoseValue: number | null
   unit: string | null
+  caseContext: ClinicalCaseContext | null
+  aiDraft: ClinicalAiDraft | null
 }
 
 interface ClinicalTaskRow {
@@ -43,6 +86,32 @@ interface ClinicalTaskRow {
   review_note: string | null
   ai_draft_status: AiDraftStatus
   created_at: string
+}
+
+interface ClinicalCaseContextRow {
+  id: string
+  clinical_task_id: string | null
+  status: ClinicalCaseContextStatus
+  context_version: string
+  snapshot: unknown
+  missing_data: unknown
+  prepared_at: string | null
+}
+
+interface ClinicalAiDraftRow {
+  id: string
+  clinical_task_id: string
+  status: ClinicalAiDraftStatus
+  draft_text: string | null
+  structured_output: unknown
+  source_keys: unknown
+  model: string | null
+  provider: string
+  prompt_version: string
+  generated_at: string | null
+  reviewed_at: string | null
+  review_note: string | null
+  error_message: string | null
 }
 
 interface PatientRow {
@@ -85,6 +154,50 @@ const TASK_STATUS_ORDER: Record<ClinicalTaskStatus, number> = {
   in_review: 1,
   closed: 2,
   draft_ready: 3,
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+}
+
+function asObjectArray(value: unknown): Array<Record<string, unknown>> {
+  return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item)) : []
+}
+
+function mapCaseContext(row: ClinicalCaseContextRow): ClinicalCaseContext {
+  const snapshot = asObject(row.snapshot)
+  return {
+    id: row.id,
+    status: row.status,
+    contextVersion: row.context_version,
+    missingData: Array.isArray(row.missing_data) ? row.missing_data.filter((item): item is string => typeof item === 'string') : [],
+    preparedAt: row.prepared_at,
+    snapshot: {
+      alert: Object.keys(asObject(snapshot.alert)).length ? asObject(snapshot.alert) : null,
+      triggering_reading: Object.keys(asObject(snapshot.triggering_reading)).length ? asObject(snapshot.triggering_reading) : null,
+      history: Object.keys(asObject(snapshot.history)).length ? asObject(snapshot.history) as ClinicalCaseContextSnapshot['history'] : null,
+      recent_readings: asObjectArray(snapshot.recent_readings),
+      recent_daily_context: asObjectArray(snapshot.recent_daily_context),
+      adherence_summaries: asObjectArray(snapshot.adherence_summaries),
+    },
+  }
+}
+
+function mapAiDraft(row: ClinicalAiDraftRow): ClinicalAiDraft {
+  return {
+    id: row.id,
+    status: row.status,
+    draftText: row.draft_text,
+    structuredOutput: asObject(row.structured_output),
+    sourceKeys: Array.isArray(row.source_keys) ? row.source_keys.filter((item): item is string => typeof item === 'string') : [],
+    model: row.model,
+    provider: row.provider,
+    promptVersion: row.prompt_version,
+    generatedAt: row.generated_at,
+    reviewedAt: row.reviewed_at,
+    reviewNote: row.review_note,
+    errorMessage: row.error_message,
+  }
 }
 
 function getMetadataValue(metadata: unknown, key: string): unknown {
@@ -164,6 +277,8 @@ function mapTaskRow(
   row: ClinicalTaskRow,
   patientNames: Map<string, string>,
   sourceAlerts: Map<string, SourceAlertRow>,
+  caseContexts: Map<string, ClinicalCaseContext>,
+  aiDrafts: Map<string, ClinicalAiDraft>,
 ): ProfessionalClinicalTask {
   const sourceAlert = row.source_alert_id ? sourceAlerts.get(row.source_alert_id) : undefined
 
@@ -187,7 +302,42 @@ function mapTaskRow(
     alertReason: sourceAlert?.reason ?? null,
     glucoseValue: getMetadataNumber(sourceAlert?.metadata, 'glucose_value') ?? getMetadataNumber(sourceAlert?.metadata, 'glucoseValue'),
     unit: getMetadataString(sourceAlert?.metadata, 'unit'),
+    caseContext: caseContexts.get(row.id) ?? null,
+    aiDraft: aiDrafts.get(row.id) ?? null,
   }
+}
+
+async function getClinicalCaseContexts(taskIds: string[]): Promise<Map<string, ClinicalCaseContext>> {
+  if (taskIds.length === 0) return new Map()
+
+  const { data, error } = await supabase
+    .from('clinical_case_contexts')
+    .select('id, clinical_task_id, status, context_version, snapshot, missing_data, prepared_at')
+    .in('clinical_task_id', taskIds)
+
+  if (error) throw error
+
+  return new Map(
+    ((data ?? []) as unknown as ClinicalCaseContextRow[])
+      .filter((row) => Boolean(row.clinical_task_id))
+      .map((row) => [row.clinical_task_id as string, mapCaseContext(row)]),
+  )
+}
+
+async function getClinicalAiDrafts(taskIds: string[]): Promise<Map<string, ClinicalAiDraft>> {
+  if (taskIds.length === 0) return new Map()
+
+  const { data, error } = await supabase
+    .from('clinical_task_drafts')
+    .select('id, clinical_task_id, status, draft_text, structured_output, source_keys, model, provider, prompt_version, generated_at, reviewed_at, review_note, error_message')
+    .in('clinical_task_id', taskIds)
+
+  if (error) throw error
+
+  return new Map(
+    ((data ?? []) as unknown as ClinicalAiDraftRow[])
+      .map((row) => [row.clinical_task_id, mapAiDraft(row)]),
+  )
 }
 
 export async function getProfessionalClinicalTasks(): Promise<ProfessionalClinicalTask[]> {
@@ -205,9 +355,11 @@ export async function getProfessionalClinicalTasks(): Promise<ProfessionalClinic
   const sourceAlerts = await getSourceAlerts(
     [...new Set(rows.map((row) => row.source_alert_id).filter((id): id is string => Boolean(id)))],
   )
+  const caseContexts = await getClinicalCaseContexts(rows.map((row) => row.id))
+  const aiDrafts = await getClinicalAiDrafts(rows.map((row) => row.id))
 
   return rows
-    .map((row) => mapTaskRow(row, patientNames, sourceAlerts))
+    .map((row) => mapTaskRow(row, patientNames, sourceAlerts, caseContexts, aiDrafts))
     .sort((first, second) => TASK_STATUS_ORDER[first.status] - TASK_STATUS_ORDER[second.status])
 }
 
@@ -216,13 +368,37 @@ export async function startClinicalTaskReview(taskId: string): Promise<void> {
     .from('clinical_tasks')
     .update({ status: 'in_review' })
     .eq('id', taskId)
-    .eq('status', 'pending_review')
+    .in('status', ['pending_review', 'draft_ready'])
     .select(TASK_COLUMNS)
     .single()
 
   if (error) {
     throw error
   }
+}
+
+export async function reviewClinicalAiDraft(
+  draftId: string,
+  status: ClinicalAiDraftReviewStatus,
+  draftText: string,
+  reviewNote?: string,
+): Promise<ClinicalAiDraft> {
+  const trimmedText = draftText.trim()
+  if (status !== 'discarded' && !trimmedText) {
+    throw new Error('Draft text is required')
+  }
+
+  const { data, error } = await supabase
+    .rpc('review_clinical_ai_draft', {
+      target_draft: draftId,
+      next_status: status,
+      next_text: trimmedText || null,
+      review_note: reviewNote?.trim() || null,
+    })
+    .single()
+
+  if (error) throw error
+  return mapAiDraft(data as unknown as ClinicalAiDraftRow)
 }
 
 export async function closeClinicalTask(

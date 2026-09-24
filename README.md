@@ -2,11 +2,13 @@
 
 Plataforma de seguimiento de glucosa para pacientes y profesionales. React, TypeScript, Vite y Supabase. El trabajo actual se desarrolla en archivos locales; el push a `main` se realiza después de aprobar cada objetivo.
 
-## Tres objetivos
+## Objetivos
 
 1. **Acceso y perfiles:** registro, inicio y recuperación de sesión, historia inicial por secciones y vínculo paciente–profesional. Implementado para revisión local.
 2. **Seguimiento y métricas:** captura contextual de glucosa, dashboards de paciente y profesional, interpretación y justificación de cada indicador. Implementación local en revisión.
 3. **Automatización y evaluación:** adaptación de workflows, contratos de eventos, evaluación operativa y preparación del despliegue definitivo.
+4. **Preparación clínica:** generación de un snapshot auditable desde una alerta y creación de la tarea para el profesional vinculado.
+5. **Apoyo con IA:** borrador estructurado, editable y con fuentes para que el profesional revise una alerta; no diagnostica, prescribe ni se envía al paciente.
 
 ## Arranque reproducible en desarrollo
 
@@ -49,6 +51,7 @@ Con Docker iniciado y los datos de demostración creados:
 npm run build
 npm run lint
 npm run test:integration
+npm run test:objective-four
 npx playwright install chromium
 npm run test:browser
 npm run db:check
@@ -70,7 +73,7 @@ npm run demo:local
 
 - `src/`: interfaz, rutas, contratos y servicios.
 - `supabase/migrations/`: SQL versionado para una instalación nueva de desarrollo.
-- `workflows/n8n/`: los seis workflows originales; conexiones y credenciales conservadas.
+- `workflows/n8n/`: workflows de ingestión, adherencia, alertas, tareas, preparación de caso y apoyo con IA; conexiones y credenciales de Supabase conservadas.
 - `docs/references/`: Excel de variables y protocolo PDF originales.
 - [Objetivo 1 y fundamento de las decisiones](docs/objective-1.md).
 - [Datos, permisos y preparación de otra instalación](docs/architecture/access-profiles.md).
@@ -79,6 +82,10 @@ npm run demo:local
 - [Validación del objetivo 2](docs/validation/objective-2.md).
 - [Objetivo 3: automatización, eventos y evaluación](docs/objective-3.md).
 - [Validación del objetivo 3](docs/validation/objective-3.md).
+- [Objetivo 4: preparación del caso clínico](docs/objective-4.md).
+- [Validación del objetivo 4](docs/validation/objective-4.md).
+- [Objetivo 5: apoyo con IA](docs/objective-5.md).
+- [Validación del objetivo 5](docs/validation/objective-5.md).
 - [Inventario de workflows](workflows/README.md).
 
 ## Continuar en otro equipo
@@ -92,3 +99,7 @@ El script consolidado para copiar y pegar en el SQL Editor de un Supabase **nuev
 La ampliación SQL del objetivo 2 está en [docs/sql/objetivo-2-supabase.sql](docs/sql/objetivo-2-supabase.sql). Se ejecuta después del SQL del objetivo 1 y agrega el contexto de lecturas y el check-in diario.
 
 La ampliación SQL del objetivo 3 está en [docs/sql/objetivo-3-supabase.sql](docs/sql/objetivo-3-supabase.sql). Se ejecuta después de los objetivos 1 y 2 y agrega el contrato de eventos, workflows y resúmenes persistidos.
+
+La ampliación SQL del objetivo 4 está en [docs/sql/objetivo-4-supabase.sql](docs/sql/objetivo-4-supabase.sql). Se ejecuta después de los objetivos 1, 2 y 3 y agrega el snapshot auditable que consumirá el futuro workflow de apoyo con IA.
+
+La ampliación SQL del objetivo 5 está en [docs/sql/objetivo-5-supabase.sql](docs/sql/objetivo-5-supabase.sql). Se ejecuta después de los objetivos 1 a 4 y agrega el registro de fuentes, borradores, revisiones y permisos del apoyo con IA.

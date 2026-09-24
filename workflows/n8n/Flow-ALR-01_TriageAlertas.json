@@ -399,6 +399,41 @@
     },
     {
       "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "CLN03TrackyGlu01",
+          "mode": "list",
+          "cachedResultName": "Flow-CLN-03_PrepararCasoClinico"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "source_event_id": "={{ $('Create Alert Event').first().json.event_id }}",
+            "patient_id": "={{ $('Create Alert Event').first().json.patient_id }}",
+            "source_alert_id": "={{ $('Create Alert').first().json.id }}",
+            "workflow_run_id": "={{ $('Create ALR Workflow Run').first().json.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -352,
+        288
+      ],
+      "id": "f81ad59b-4ab3-46d8-a3e4-1d23c0a40001",
+      "name": "Execute Flow-CLN-03"
+    },
+    {
+      "parameters": {
         "operation": "update",
         "tableId": "workflow_runs",
         "filters": {
@@ -649,6 +684,17 @@
       ]
     },
     "Create Alert Event": {
+      "main": [
+        [
+          {
+            "node": "Execute Flow-CLN-03",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Flow-CLN-03": {
       "main": [
         [
           {

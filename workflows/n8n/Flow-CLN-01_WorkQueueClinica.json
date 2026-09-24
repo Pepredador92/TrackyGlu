@@ -223,11 +223,6 @@
               "keyName": "source_alert_id",
               "condition": "eq",
               "keyValue": "={{ $('Normalize Clinical Trigger').first().json.source_alert_id }}"
-            },
-            {
-              "keyName": "trigger_rule",
-              "condition": "eq",
-              "keyValue": "alert_acknowledged"
             }
           ]
         }

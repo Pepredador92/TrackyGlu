@@ -1,13 +1,16 @@
-import { ArrowLeft, Check, LogOut, Play, Trash2 } from 'lucide-react'
+import { ArrowLeft, Bot, Check, FileSearch, LogOut, Play, Save, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../components/auth/useAuth'
 import {
   closeClinicalTask,
   getProfessionalClinicalTasks,
+  reviewClinicalAiDraft,
   startClinicalTaskReview,
 } from '../../services/clinicalTaskService'
 import type {
+  ClinicalCaseContext,
+  ClinicalAiDraftReviewStatus,
   ClinicalTaskDecision,
   ClinicalTaskPriority,
   ClinicalTaskStatus,
@@ -34,6 +37,13 @@ const decisionLabels: Record<ClinicalTaskDecision, string> = {
   cancelled: 'Eliminada',
 }
 
+const contextStatusLabels: Record<ClinicalCaseContext['status'], string> = {
+  prepared: 'Contexto completo',
+  partial: 'Contexto parcial',
+  waiting_professional: 'Pendiente de profesional',
+  failed: 'No disponible',
+}
+
 const dateTimeFormatter = new Intl.DateTimeFormat('es-MX', {
   dateStyle: 'medium',
   timeStyle: 'short',
@@ -48,6 +58,7 @@ function ProfessionalTasksPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [operationError, setOperationError] = useState(false)
   const [notes, setNotes] = useState<Record<string, string>>({})
+  const [draftTexts, setDraftTexts] = useState<Record<string, string>>({})
 
   async function loadTasks() {
     setIsLoading(true)
@@ -131,6 +142,25 @@ function ProfessionalTasksPage() {
     }
   }
 
+  async function handleReviewAiDraft(task: ProfessionalClinicalTask, status: ClinicalAiDraftReviewStatus) {
+    if (!task.aiDraft) return
+    const draftText = draftTexts[task.id] ?? task.aiDraft.draftText ?? ''
+    setProcessingTaskId(task.id)
+    setOperationError(false)
+    setSuccessMessage('')
+
+    try {
+      await reviewClinicalAiDraft(task.aiDraft.id, status, draftText, notes[task.id])
+      await loadTasks()
+      setSuccessMessage(status === 'discarded' ? 'Borrador descartado. La tarea sigue disponible para revisión.' : 'Borrador guardado para revisión profesional.')
+    } catch (error) {
+      console.error('Could not review clinical AI draft', error)
+      setOperationError(true)
+    } finally {
+      setProcessingTaskId(null)
+    }
+  }
+
   return (
     <main className="professional-tasks">
       <div className="professional-tasks__container">
@@ -164,9 +194,12 @@ function ProfessionalTasksPage() {
                 key={task.id}
                 task={task}
                 note={notes[task.id] ?? ''}
+                draftText={draftTexts[task.id] ?? task.aiDraft?.draftText ?? ''}
                 isProcessing={processingTaskId === task.id}
                 onNoteChange={(value) => setNotes((current) => ({ ...current, [task.id]: value }))}
+                onDraftTextChange={(value) => setDraftTexts((current) => ({ ...current, [task.id]: value }))}
                 onStartReview={handleStartReview}
+                onReviewAiDraft={handleReviewAiDraft}
                 onCloseTask={handleCloseTask}
               />
             ))}
@@ -180,16 +213,22 @@ function ProfessionalTasksPage() {
 function ClinicalTaskCard({
   task,
   note,
+  draftText,
   isProcessing,
   onNoteChange,
+  onDraftTextChange,
   onStartReview,
+  onReviewAiDraft,
   onCloseTask,
 }: {
   task: ProfessionalClinicalTask
   note: string
+  draftText: string
   isProcessing: boolean
   onNoteChange: (value: string) => void
+  onDraftTextChange: (value: string) => void
   onStartReview: (taskId: string) => void
+  onReviewAiDraft: (task: ProfessionalClinicalTask, status: ClinicalAiDraftReviewStatus) => void
   onCloseTask: (task: ProfessionalClinicalTask, decision: 'approved' | 'cancelled') => void
 }) {
   return (
@@ -210,13 +249,15 @@ function ClinicalTaskCard({
           <strong>{task.glucoseValue}</strong>{task.unit && <span>{task.unit}</span>}
         </p>
       )}
+      {task.caseContext && <ClinicalCaseContextSummary context={task.caseContext} />}
+      {task.aiDraft && <ClinicalAiDraftEditor task={task} draftText={draftText} isProcessing={isProcessing} onDraftTextChange={onDraftTextChange} onReviewAiDraft={onReviewAiDraft} />}
       <p className="clinical-task-card__date">
         Creada: <time dateTime={task.createdAt}>{dateTimeFormatter.format(new Date(task.createdAt))}</time>
       </p>
       {task.firstReviewAt && <p className="clinical-task-card__date">Primera revisión: {dateTimeFormatter.format(new Date(task.firstReviewAt))}</p>}
       {task.closedAt && <p className="clinical-task-card__date">Cerrada: {dateTimeFormatter.format(new Date(task.closedAt))}</p>}
 
-      {task.status === 'pending_review' && (
+      {(task.status === 'pending_review' || task.status === 'draft_ready') && (
         <button className="clinical-task-card__action" type="button" disabled={isProcessing} onClick={() => onStartReview(task.id)}>
           <Play size={17} strokeWidth={2} aria-hidden="true" />
           <span>{isProcessing ? 'Iniciando...' : 'Iniciar revisión'}</span>
@@ -273,6 +314,95 @@ function ClinicalTaskCard({
         </div>
       )}
     </article>
+  )
+}
+
+function ClinicalAiDraftEditor({
+  task,
+  draftText,
+  isProcessing,
+  onDraftTextChange,
+  onReviewAiDraft,
+}: {
+  task: ProfessionalClinicalTask
+  draftText: string
+  isProcessing: boolean
+  onDraftTextChange: (value: string) => void
+  onReviewAiDraft: (task: ProfessionalClinicalTask, status: ClinicalAiDraftReviewStatus) => void
+}) {
+  const draft = task.aiDraft
+  if (!draft) return null
+
+  if (draft.status === 'failed') {
+    return (
+      <section className="clinical-task-card__ai-draft clinical-task-card__ai-draft--failed" aria-label="Borrador de apoyo con IA">
+        <div className="clinical-task-card__ai-heading"><Bot size={17} strokeWidth={2} aria-hidden="true" /><strong>Apoyo con IA no disponible</strong></div>
+        <p>{draft.errorMessage || 'No fue posible generar el borrador. La revisión profesional continúa disponible.'}</p>
+      </section>
+    )
+  }
+
+  if (!draft.draftText || draft.status === 'discarded') return null
+
+  return (
+    <section className="clinical-task-card__ai-draft" aria-label="Borrador de apoyo con IA">
+      <div className="clinical-task-card__ai-heading">
+        <Bot size={17} strokeWidth={2} aria-hidden="true" />
+        <strong>Borrador de apoyo para editar</strong>
+        <span>{draft.status === 'approved' ? 'Marcado como aprobado' : `Fuente ${draft.promptVersion}`}</span>
+      </div>
+      <p className="clinical-task-card__ai-help">La IA organiza la evidencia disponible. El profesional decide, corrige o descarta el texto antes de cerrar la tarea.</p>
+      <textarea
+        value={draftText}
+        onChange={(event) => onDraftTextChange(event.target.value)}
+        rows={8}
+        disabled={isProcessing}
+        aria-label="Borrador editable de apoyo clínico"
+      />
+      <div className="clinical-task-card__ai-actions">
+        <button type="button" disabled={isProcessing || !draftText.trim()} onClick={() => onReviewAiDraft(task, 'edited')}>
+          <Save size={16} strokeWidth={2} aria-hidden="true" />
+          <span>Guardar cambios</span>
+        </button>
+        <button type="button" disabled={isProcessing || !draftText.trim()} onClick={() => onReviewAiDraft(task, 'approved')}>
+          <Check size={16} strokeWidth={2} aria-hidden="true" />
+          <span>Aprobar borrador</span>
+        </button>
+        <button type="button" className="clinical-task-card__ai-discard" disabled={isProcessing} onClick={() => onReviewAiDraft(task, 'discarded')}>
+          <X size={16} strokeWidth={2} aria-hidden="true" />
+          <span>Descartar</span>
+        </button>
+      </div>
+    </section>
+  )
+}
+
+function ClinicalCaseContextSummary({ context }: { context: ClinicalCaseContext }) {
+  const summaries = context.snapshot.adherence_summaries
+  const latestSummary = summaries.find((summary) => Number(summary.window_days) === 30) ?? summaries[0]
+  const historyRevision = context.snapshot.history?.revision
+  const continuity = latestSummary?.adherence_pct
+  const completeness = latestSummary?.completeness_pct
+
+  return (
+    <section className="clinical-task-card__context" aria-label="Contexto clínico preparado">
+      <div className="clinical-task-card__context-heading">
+        <FileSearch size={17} strokeWidth={2} aria-hidden="true" />
+        <strong>Contexto reunido para revisión</strong>
+        <span>{contextStatusLabels[context.status]}</span>
+      </div>
+      <div className="clinical-task-card__context-facts">
+        <span>{context.snapshot.recent_readings.length} lecturas en 30 días</span>
+        {historyRevision !== undefined && <span>Historia v{historyRevision}</span>}
+        {typeof continuity === 'number' && <span>Continuidad {continuity}%</span>}
+        {typeof completeness === 'number' && <span>Completitud {completeness}%</span>}
+      </div>
+      {context.missingData.length > 0 && (
+        <p className="clinical-task-card__context-missing">
+          Datos por confirmar: {context.missingData.join(', ')}.
+        </p>
+      )}
+    </section>
   )
 }
 

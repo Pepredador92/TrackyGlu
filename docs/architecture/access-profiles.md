@@ -53,7 +53,7 @@ Las conexiones originales de los workflows se conservaron sin sustituciones. Las
 La migración nueva es una **base para instalación vacía**, ya comprobada con reset local. Antes de aplicarla a una base self-hosted existente:
 
 1. Obtener el esquema y registro de migraciones de esa instancia y una copia de respaldo verificable.
-2. Comparar tablas de perfiles, pacientes, profesionales, vínculos y contratos utilizados por los seis workflows.
+2. Comparar tablas de perfiles, pacientes, profesionales, vínculos y contratos utilizados por los workflows de automatización.
 3. Identificar cómo se relacionan los `patient_id` existentes con pacientes. La conversión textual a UUID requiere valores válidos y referencias existentes; la migración de desarrollo no inventa esa correspondencia.
 4. Preparar SQL de adaptación que preserve datos, identificadores y conexiones, usando el modelo aprobado.
 5. Ensayar ese SQL sobre una copia en Docker y revisar integridad y permisos.
