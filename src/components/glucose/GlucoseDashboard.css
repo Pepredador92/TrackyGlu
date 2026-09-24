@@ -1,0 +1,32 @@
+.metrics-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:20px 0; }
+.metric-card { display:flex; align-items:flex-start; gap:11px; padding:16px; background:#fff; border:1px solid #e0e7da; border-radius:12px; min-width:0; }
+.metric-card__icon { display:grid; place-items:center; width:32px; height:32px; flex:0 0 32px; border-radius:9px; color:#287c6b; background:#e6f0e8; }
+.metric-card__label,.metric-card small,.metric-details span,.metric-details small { display:block; color:#718071; font-size:12px; }
+.metric-card strong { display:block; margin:3px 0 2px; color:#183735; font-size:25px; line-height:1.1; }
+.metric-card small { line-height:1.35; }
+.metric-details { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; overflow:hidden; margin-top:16px; border:1px solid #e0e7da; border-radius:12px; background:#e0e7da; }
+.metric-details > div { padding:14px 16px; background:#fff; }
+.metric-details strong { display:block; margin-top:5px; color:#183735; font-size:17px; }
+.metric-details small { margin-top:3px; }
+.metric-details .metric-context-list { grid-column:1 / -1; }
+.metric-context-list p { margin:6px 0 0; color:#465f58; font-size:13px; line-height:1.5; }
+.glucose-chart { margin-top:18px; padding:20px; }
+.chart-heading { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+.chart-heading h3 { margin:0 0 5px; font-size:17px; }
+.chart-heading p { margin:0; color:#718071; font-size:13px; }
+.range-key { color:#718071; font-size:12px; white-space:nowrap; }
+.range-key i { display:inline-block; width:9px; height:9px; margin-right:4px; border-radius:50%; background:#dcebe0; }
+.chart-wrap { min-height:210px; margin-top:10px; }
+.chart-wrap svg { display:block; width:100%; height:auto; overflow:visible; }
+.chart-wrap text { fill:#809187; font:11px system-ui,sans-serif; }
+.chart-range { fill:#eff7ed; }
+.chart-guide { stroke:#c9d8cb; stroke-dasharray:4 4; stroke-width:1; }
+.chart-line { stroke:#287c6b; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+.chart-point { fill:#fff; stroke:#287c6b; stroke-width:2.5; }
+.chart-empty { display:grid; place-items:center; min-height:150px; color:#718071; text-align:center; }
+.chart-empty p { margin:8px 0 0; font-size:13px; }
+.metric-disclaimer { display:flex; align-items:flex-start; gap:7px; margin:12px 0 0; color:#718071; font-size:12px; line-height:1.45; }
+.metric-disclaimer svg { flex:0 0 15px; margin-top:1px; color:#ae7b35; }
+.metrics-cards--compact { grid-template-columns:repeat(2,minmax(0,1fr)); margin:14px 0; }
+@media (max-width:780px) { .metrics-cards { grid-template-columns:repeat(2,minmax(0,1fr)); } .metric-details { grid-template-columns:repeat(2,minmax(0,1fr)); } .chart-heading { display:block; } .range-key { display:block; margin-top:10px; } }
+@media (max-width:440px) { .metrics-cards { gap:8px; } .metric-card { padding:12px; gap:8px; } .metric-card__icon { display:none; } .metric-card strong { font-size:21px; } .metric-details > div { padding:12px; } }

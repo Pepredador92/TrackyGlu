@@ -233,6 +233,9 @@
   text-underline-offset: 4px;
 }
 
+.patient-metrics { margin-top: 34px; }
+.metrics-period { margin: 4px 0 0; color: var(--color-text-secondary); font-size: 0.82rem; }
+
 .icon-button:focus-visible,
 .primary-glucose-action:focus-visible,
 .records-link:focus-visible {

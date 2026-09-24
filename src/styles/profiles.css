@@ -97,6 +97,7 @@
 .sidebar-note p { font-size:12px; line-height:1.8; }
 .sidebar-note a { color:#426946; font-size:11px; }
 .surface { background:#fff; padding:30px; border:1px solid #e0e7df; border-radius:16px; box-shadow:0 3px 12px #1b372203; }
+.patient-glucose-summary { margin:24px 0; }
 .history-form { padding:34px 40px; }
 .step-caption { display:flex; justify-content:space-between; font-size:11px; color:#7d8c7e; margin-bottom:13px; }
 .progress-track { height:4px; background:#edf2ea; border-radius:6px; overflow:hidden; margin-bottom:30px; }

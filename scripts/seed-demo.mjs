@@ -18,6 +18,19 @@ for (const person of people) {
   if (person.role === 'patient') {
     const history = requireData(await api.from('patient_histories').select('revision').eq('patient_id', entity.id).single())
     if (history.revision === 0) requireData(await api.rpc('save_patient_history', { history_data: { ...sampleHistory, support: 'Datos ficticios para revisar la interfaz.' }, next_step: 3, expected_revision: 0, complete: true }))
+    const readings = requireData(await api.from('glucose_readings').select('id').eq('patient_id', entity.id).limit(1))
+    if (!readings.length) {
+      const now = Date.now()
+      const demoReadings = [
+        { glucose_value: 118, measurement_context: 'fasting_morning', measured_at: new Date(now - 9 * 86400000 + 7 * 3600000).toISOString() },
+        { glucose_value: 146, measurement_context: 'pre_meal', measured_at: new Date(now - 7 * 86400000 + 13 * 3600000).toISOString() },
+        { glucose_value: 171, measurement_context: 'post_meal_2h', measured_at: new Date(now - 6 * 86400000 + 15 * 3600000).toISOString(), has_eaten: true, meal_type: 'lunch' },
+        { glucose_value: 105, measurement_context: 'fasting_morning', measured_at: new Date(now - 4 * 86400000 + 7 * 3600000).toISOString() },
+        { glucose_value: 132, measurement_context: 'pre_meal', measured_at: new Date(now - 2 * 86400000 + 14 * 3600000).toISOString() },
+        { glucose_value: 124, measurement_context: 'fasting_morning', measured_at: new Date(now - 86400000 + 8 * 3600000).toISOString() },
+      ].map((reading) => ({ ...reading, patient_id: entity.id, unit: 'mg/dL', source_channel: 'web', measurement_source: 'capillary' }))
+      requireData(await api.from('glucose_readings').insert(demoReadings))
+    }
   }
 }
 const [patient, professional] = accounts

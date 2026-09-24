@@ -16,6 +16,7 @@ if (operation === 'create') {
       const patient = requireData(await admin.from('patients').select('id').eq('profile_id', profile.id).maybeSingle())
       const professional = requireData(await admin.from('professionals').select('id').eq('profile_id', profile.id).maybeSingle())
       if (patient) {
+        requireData(await admin.from('glucose_readings').delete().eq('patient_id', patient.id))
         requireData(await admin.from('patient_invitations').delete().eq('accepted_by', patient.id))
         requireData(await admin.from('patient_history_reviews').delete().eq('patient_id', patient.id))
         requireData(await admin.from('patient_history_versions').delete().eq('patient_id', patient.id))

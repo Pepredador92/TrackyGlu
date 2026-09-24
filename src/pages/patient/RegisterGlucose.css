@@ -3,6 +3,24 @@
   padding: 0 20px 48px;
 }
 
+.capture-loading { padding:24px; border:1px solid #e0e7da; border-radius:12px; color:#66786d; background:#fff; }
+.context-note { display:flex; flex-direction:column; gap:4px; padding:14px 16px; margin-bottom:20px; border-radius:10px; background:#edf5ec; color:#355d51; font-size:13px; line-height:1.45; }
+.context-note strong { color:#1c4e45; }
+.field-help { margin:4px 0 12px; color:#718071; font-size:13px; line-height:1.45; }
+.measurement-option { align-items:flex-start; }
+.measurement-option strong { display:block; font-weight:600; }
+.measurement-option small { display:block; margin-top:3px; color:#718071; font-size:11px; }
+.contextual-question { padding:16px; border:1px solid #e0e7da; border-radius:10px; }
+.contextual-question legend { padding:0 5px; font-weight:600; color:#294b44; }
+.binary-options,.meal-options,.symptom-options { display:flex; flex-wrap:wrap; gap:8px; }
+.binary-options label,.meal-options label,.symptom-options label { cursor:pointer; }
+.binary-options input,.meal-options input,.symptom-options input { position:absolute; opacity:0; pointer-events:none; }
+.binary-options span,.meal-options span,.symptom-options span { display:block; padding:10px 14px; border:1px solid #d3dfd3; border-radius:8px; background:#fff; color:#52685d; font-size:13px; }
+.binary-options input:checked + span,.meal-options input:checked + span,.symptom-options input:checked + span { border-color:#287c6b; background:#e6f0e8; color:#1e6255; box-shadow:0 0 0 2px #c7e0d2; }
+.activity-detail { margin-top:14px; }
+.activity-detail label { display:block; margin-bottom:6px; font-size:13px; color:#52685d; }
+.activity-detail input { max-width:180px; }
+
 .register-glucose__container {
   width: 100%;
   max-width: 680px;

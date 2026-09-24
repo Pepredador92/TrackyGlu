@@ -37,7 +37,7 @@ try {
   assert.ok((await patient.api.rpc('create_account', { account_role: 'admin', account_name: 'Admin' })).error)
   ok('Alta de ambos roles, inicialización idempotente y rol inmutable')
 
-  const reading = { patient_id: patient.id, glucose_value: 110, unit: 'mg/dL', measurement_context: 'fasting_morning', measured_at: new Date().toISOString(), source_channel: 'web' }
+  const reading = { patient_id: patient.id, glucose_value: 110, unit: 'mg/dL', measurement_context: 'post_meal_2h', measured_at: new Date().toISOString(), source_channel: 'web', measurement_source: 'capillary', has_eaten: true, last_meal_at: new Date(Date.now() - 2 * 3600000).toISOString(), meal_type: 'lunch', symptoms: [], quality_state: 'valid', processing_state: 'persisted' }
   assert.ok((await patient.api.from('glucose_readings').insert(reading)).error)
   assert.ok((await patient.api.rpc('save_patient_history', { history_data: {}, next_step: 3, expected_revision: 0, complete: true })).error)
   assert.ok((await patient.api.rpc('save_patient_history', { history_data: { ...sampleHistory, sex: 'invalid' }, next_step: 3, expected_revision: 0, complete: true })).error)
@@ -49,6 +49,7 @@ try {
   assert.ok((await patient.api.rpc('save_patient_history', { history_data: sampleHistory, next_step: 3, expected_revision: 0, complete: true })).error)
   requireData(await patient.api.from('glucose_readings').insert(reading))
   assert.ok((await patient.api.from('glucose_readings').insert({ ...reading, patient_id: otherPatient.id })).error)
+  requireData(await patient.api.from('glucose_daily_context').insert({ patient_id: patient.id, local_date: new Date().toISOString().slice(0, 10), treatment_adherence_24h: true, missed_doses_7d: 'none', illness_flag: false, stress_flag: false, sleep_quality: 'good' }))
   ok('Historia obligatoria, datos válidos, persistencia y conflicto entre ediciones')
 
   for (const api of [otherPatient.api, professional.api, otherProfessional.api, client()]) {
@@ -69,6 +70,11 @@ try {
   assert.ok((await otherPatient.api.rpc('accept_patient_invitation', { invitation_code: invitation.code })).error)
   assert.ok((await professional.api.rpc('accept_patient_invitation', { invitation_code: invitation.code })).error)
   assert.equal(requireData(await professional.api.from('patient_histories').select('*')).length, 1)
+  const linkedReadings = requireData(await professional.api.from('glucose_readings').select('glucose_value,measurement_context,last_meal_at,meal_type,symptoms'))
+  assert.equal(linkedReadings.length, 1)
+  assert.equal(linkedReadings[0].measurement_context, 'post_meal_2h')
+  assert.equal(requireData(await professional.api.from('glucose_daily_context').select('local_date')).length, 1)
+  assert.equal(requireData(await otherPatient.api.from('glucose_daily_context').select()).length, 0)
   assert.equal(requireData(await otherProfessional.api.from('patient_histories').select('*')).length, 0)
   assert.equal(requireData(await patient.api.from('professionals').select('id')).length, 1)
   const directory = requireData(await professional.api.from('patients').select('id,profile_id,profiles(display_name),patient_histories(completed_at)'))

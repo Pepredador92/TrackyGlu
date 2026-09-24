@@ -3,7 +3,11 @@ import type { GlucoseMeasurementContext } from '../types/glucose'
 export const GLUCOSE_CONTEXT_LABELS: Record<GlucoseMeasurementContext, string> = {
   fasting_morning: 'Ayuno',
   pre_meal: 'Antes de comer',
+  post_meal_1h: '1 hora después de comer',
   post_meal_2h: '2 horas después de comer',
+  post_meal_3h_plus: '3 horas o más después',
+  bedtime: 'Antes de dormir',
+  random: 'Sin momento específico',
   other: 'Otro',
 }
 

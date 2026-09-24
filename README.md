@@ -5,7 +5,7 @@ Plataforma de seguimiento de glucosa para pacientes y profesionales. React, Type
 ## Tres objetivos
 
 1. **Acceso y perfiles:** registro, inicio y recuperación de sesión, historia inicial por secciones y vínculo paciente–profesional. Implementado para revisión local.
-2. **Seguimiento y métricas:** captura contextual de glucosa, dashboards de paciente y profesional, interpretación y justificación de cada indicador.
+2. **Seguimiento y métricas:** captura contextual de glucosa, dashboards de paciente y profesional, interpretación y justificación de cada indicador. Implementación local en revisión.
 3. **Automatización y evaluación:** adaptación de workflows, contratos de eventos, evaluación operativa y preparación del despliegue definitivo.
 
 ## Arranque reproducible en desarrollo
@@ -74,6 +74,8 @@ npm run demo:local
 - [Objetivo 1 y fundamento de las decisiones](docs/objective-1.md).
 - [Datos, permisos y preparación de otra instalación](docs/architecture/access-profiles.md).
 - [Resultados de validación](docs/validation/objective-1.md).
+- [Objetivo 2: captura contextual y dashboards](docs/objective-2.md).
+- [Validación del objetivo 2](docs/validation/objective-2.md).
 - [Inventario de workflows](workflows/README.md).
 
 ## Continuar en otro equipo
@@ -83,3 +85,5 @@ Después de aprobar el objetivo y subirlo a `main`, clonar el repositorio y segu
 Para alojar el proyecto definitivamente, se confirmarán dominio, correo, configuración de Auth, copia de datos y esquema de la instancia Supabase self-hosted. La migración de este objetivo crea una base nueva: **una instancia que ya contiene tablas requiere conciliación previa del esquema**. El SQL definitivo para esa instancia se prepara después de aprobar el modelo; véase la documentación de arquitectura.
 
 El script consolidado para copiar y pegar en el SQL Editor de un Supabase **nuevo y vacío** está en [docs/sql/objetivo-1-supabase.sql](docs/sql/objetivo-1-supabase.sql). Lee primero [sus instrucciones](docs/sql/README.md); no lo ejecutes sobre una instancia existente con datos.
+
+La ampliación SQL del objetivo 2 está en [docs/sql/objetivo-2-supabase.sql](docs/sql/objetivo-2-supabase.sql). Se ejecuta después del SQL del objetivo 1 y agrega el contexto de lecturas y el check-in diario.
