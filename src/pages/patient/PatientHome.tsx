@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../components/auth/useAuth'
 import { getReadings } from '../../services/glucose/glucoseService'
 import { calculateGlucoseMetrics } from '../../services/glucose/glucoseMetrics'
-import { GlucoseTrendChart, MetricDetails, MetricDisclaimer, MetricsCards } from '../../components/glucose/GlucoseDashboard'
+import { GlucoseCompletenessChart, GlucoseTrendChart, GlucoseZonesChart, MetricDetails, MetricDisclaimer, MetricsCards } from '../../components/glucose/GlucoseDashboard'
 import type { GlucoseReading } from '../../types/glucose'
 import { GLUCOSE_CONTEXT_LABELS, formatReadingDateTime, isToday } from '../../utils/glucose'
 import './PatientHome.css'
@@ -111,7 +111,7 @@ function PatientHome() {
           )}
         </section>
 
-        {!isLoading && !hasError && <section className="patient-metrics" aria-labelledby="patient-metrics-title"><div className="section-heading"><div><h2 id="patient-metrics-title">Tu seguimiento</h2><p className="metrics-period">Últimos 14 días</p></div></div><MetricsCards metrics={metrics} /><GlucoseTrendChart metrics={metrics} /><MetricDetails metrics={metrics} /><MetricDisclaimer /></section>}
+        {!isLoading && !hasError && <section className="patient-metrics" aria-labelledby="patient-metrics-title"><div className="section-heading"><div><h2 id="patient-metrics-title">Tu seguimiento</h2><p className="metrics-period">Últimos 14 días</p></div></div><MetricsCards metrics={metrics} /><GlucoseTrendChart metrics={metrics} /><GlucoseCompletenessChart metrics={metrics} /><GlucoseZonesChart metrics={metrics} /><MetricDetails metrics={metrics} /><MetricDisclaimer /></section>}
 
         <Link className="records-link" to="/mis-registros">
           <History size={18} strokeWidth={1.9} aria-hidden="true" />

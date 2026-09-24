@@ -44,13 +44,21 @@ Las métricas se calculan en el navegador a partir de las filas que RLS ya autor
 | --- | --- | --- |
 | Lecturas | Conteo de registros válidos entre 20 y 600 mg/dL | Volumen de datos, no calidad del control |
 | Días con registro | Fechas locales distintas con una o más lecturas | Continuidad básica del seguimiento |
-| Porcentaje de días registrados | Días con registro ÷ días de ventana × 100 | Adherencia de captura; no adherencia farmacológica |
+| Continuidad diaria | Días con registro ÷ días de ventana × 100 | Porcentaje de días que tuvieron al menos una lectura; no es adherencia farmacológica |
+| Completitud diaria | Días con las tres franjas esperadas ÷ días de ventana × 100 | Cumplimiento operativo del esquema de captura; exige una lectura en mañana, tarde y noche |
+| Cobertura de franjas | Lecturas observadas ÷ (días de ventana × 3) × 100, limitada a 100% | Aproximación de cuántas oportunidades de registro se cubrieron; lecturas repetidas en una misma franja no completan otra franja |
 | Promedio | Suma de valores ÷ lecturas | Resumen descriptivo del periodo |
 | En rango general | Lecturas entre 70 y 180 mg/dL ÷ lecturas × 100 | Señal descriptiva para orientar conversación; no es TIR de CGM |
 | Por debajo / por encima | Lecturas `<70` o `>180` ÷ lecturas × 100 | Frecuencia observada en la muestra; requiere contexto y revisión |
 | Variabilidad (CV) | Desviación estándar ÷ promedio × 100 | Indicador descriptivo; con pocas lecturas se muestra con cautela |
 | Racha y brecha | Días consecutivos con lectura y mayor secuencia sin lectura | Continuidad del registro |
 | Contextos | Conteo por ayuno, antes/después de comida y otros | Ayuda a separar patrones; no sustituye una valoración |
+
+### Lectura de las gráficas
+
+- **Continuidad y completitud:** cada día se representa con tres segmentos: mañana, tarde y noche. Un segmento coloreado indica que existe al menos una lectura en esa franja; el día es completo únicamente cuando los tres segmentos están presentes. La expectativa de tres lecturas diarias sigue `AUD-02` y `AUD-03` de la hoja de variables; se podrá parametrizar si el protocolo aprobado cambia.
+- **Tendencia cartesiana:** la línea une el promedio diario. El fondo distingue visualmente las zonas `<70 mg/dL` (azul), `70–180 mg/dL` (verde) y `>180 mg/dL` (roja), y cada punto conserva el color de su zona. La referencia visual se inspira en la captura incluida en `docs/references/` sin copiar sus umbrales adicionales ni convertirla en una meta individual.
+- **Distribución por zona:** barras horizontales muestran qué proporción de las lecturas quedó baja, en rango general o alta durante la ventana seleccionada. Se muestra como resumen descriptivo, no como diagnóstico.
 
 Las ventanas de paciente son 14 días y las de profesional 30 días. La función también admite 7 días para una vista posterior y para alinear el protocolo. Cuando no hay lecturas, se muestra `Sin datos` y no se fabrica cero clínico.
 

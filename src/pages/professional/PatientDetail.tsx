@@ -8,7 +8,7 @@ import HistorySummary from '../../components/profile/HistorySummary'
 import { endAssignment, getHistory, getHistoryReviews, getPatientName, profileError, reviewHistory } from '../../services/profileService'
 import { getPatientReadings } from '../../services/glucose/glucoseService'
 import { calculateGlucoseMetrics } from '../../services/glucose/glucoseMetrics'
-import { GlucoseTrendChart, MetricDetails, MetricDisclaimer, MetricsCards } from '../../components/glucose/GlucoseDashboard'
+import { GlucoseCompletenessChart, GlucoseTrendChart, GlucoseZonesChart, MetricDetails, MetricDisclaimer, MetricsCards } from '../../components/glucose/GlucoseDashboard'
 import type { GlucoseReading } from '../../types/glucose'
 import type { HistoryReview, PatientHistory } from '../../types/clinicalHistory'
 
@@ -51,7 +51,7 @@ export default function PatientDetail() {
     {error && <div className="feedback error" role="alert">{error} <button className="inline-button" onClick={() => setReload((value) => value + 1)}>Recargar historia</button></div>}
     {record && <><div className="professional-intro"><div><p className="eyebrow">SEGUIMIENTO DEL PACIENTE</p><h1>{name}</h1><p className="lead">Lecturas de los últimos 30 días · Historia versión {record.revision}</p></div><span className={`status-badge ${latestReview ? 'ready' : ''}`}>{latestReview ? 'Revisión registrada' : record.completed_at ? 'Pendiente de revisión' : 'En progreso'}</span></div>
     {notice && <p className="feedback success" role="status">{notice}</p>}
-    <section className="surface patient-glucose-summary" aria-labelledby="patient-glucose-title"><div className="card-heading"><h2 id="patient-glucose-title">Glucosa registrada</h2><span className="muted">30 días</span></div><MetricsCards metrics={metrics} /><GlucoseTrendChart metrics={metrics} /><MetricDetails metrics={metrics} /><MetricDisclaimer /></section>
+    <section className="surface patient-glucose-summary" aria-labelledby="patient-glucose-title"><div className="card-heading"><h2 id="patient-glucose-title">Glucosa registrada</h2><span className="muted">30 días</span></div><MetricsCards metrics={metrics} /><GlucoseTrendChart metrics={metrics} /><GlucoseCompletenessChart metrics={metrics} /><GlucoseZonesChart metrics={metrics} /><MetricDetails metrics={metrics} /><MetricDisclaimer /></section>
     <div className="profile-columns"><section className="surface"><div className="card-heading"><FileText size={22} /><h2>Historia del paciente</h2></div><HistorySummary data={record.data} /></section><aside className="form-stack">
       <section className="surface"><div className="card-heading"><ShieldCheck size={22} /><h2>Revisión profesional</h2></div><p className="muted">Documenta lo que revisaste y los datos por confirmar. La valoración clínica en consulta completa esta información inicial.</p>
       {record.completed_at ? <form className="form-stack" onSubmit={submit}><div className="profile-field"><label htmlFor="review-note">Nota de revisión</label><textarea id="review-note" required rows={5} maxLength={4000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Datos revisados con el paciente, aclaraciones y pendientes…" /></div><button className="primary-button" disabled={busy || !note.trim()}><CheckCircle2 size={18} />{busy ? 'Guardando…' : 'Registrar revisión'}</button></form> : <p className="feedback">El paciente aún está completando sus respuestas. Podrás registrar la revisión cuando termine.</p>}

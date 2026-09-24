@@ -12,8 +12,8 @@ Fecha: 24 de septiembre de 2026. Entorno: Supabase local en Docker, API 55321, a
 | Lint (`npm run lint`) | Sin incidencias |
 | Integración de permisos | 6 grupos aprobados |
 | Registro contextual en navegador | Primera lectura, comida, hora de comida, actividad opcional y persistencia aprobados |
-| Dashboard del paciente | Lecturas, días registrados, promedio, rango, racha y gráfica aprobados |
-| Dashboard profesional | Historia vinculada, resumen de 30 días y gráfica del paciente aprobados |
+| Dashboard del paciente | Lecturas, promedio, continuidad, completitud, racha y gráficas de tendencia/completitud/zonas aprobados |
+| Dashboard profesional | Historia vinculada, resumen de 30 días y las tres gráficas del paciente aprobados |
 | Separación de datos | Profesional ve contexto solo después de aceptar el vínculo; otro paciente no ve el check-in diario |
 
 ## Datos comprobados
@@ -24,6 +24,8 @@ Fecha: 24 de septiembre de 2026. Entorno: Supabase local en Docker, API 55321, a
 - El check-in diario usa una fila por paciente y fecha y puede leerse por el profesional vinculado.
 - El profesional no puede editar lecturas ni consultar las de un paciente no vinculado.
 - La primera captura del día presenta preguntas adicionales y las lecturas siguientes no repiten el aviso de primera lectura.
+- La continuidad se calcula como días con al menos una lectura; la completitud exige una lectura en cada franja de mañana, tarde y noche.
+- La tendencia cartesiana distingue las zonas `<70`, `70–180` y `>180 mg/dL`; la distribución por zona conserva esos mismos colores y porcentajes.
 
 ## Alcance de la evidencia
 

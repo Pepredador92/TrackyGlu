@@ -2,11 +2,27 @@ import type { GlucoseMeasurementContext, GlucoseReading } from '../../types/gluc
 
 export type MetricsWindow = 7 | 14 | 30
 
+export type GlucoseMeasurementSlot = 'morning' | 'afternoon' | 'night'
+
+export interface DailyCompletenessPoint {
+  day: string
+  morning: boolean
+  afternoon: boolean
+  night: boolean
+  readingCount: number
+  complete: boolean
+}
+
 export interface GlucoseMetrics {
   windowDays: MetricsWindow
   totalReadings: number
   daysWithReading: number
   adherencePct: number
+  continuityPct: number
+  completeDays: number
+  completenessPct: number
+  expectedReadings: number
+  slotCoveragePct: number | null
   mean: number | null
   minimum: number | null
   maximum: number | null
@@ -20,6 +36,7 @@ export interface GlucoseMetrics {
   latestReadingAt: string | null
   contextCounts: Partial<Record<GlucoseMeasurementContext, number>>
   series: Array<{ day: string; value: number | null; count: number }>
+  dailyCompleteness: DailyCompletenessPoint[]
 }
 
 function dayKey(date: Date): string {
@@ -53,6 +70,16 @@ function currentRun(flags: boolean[]): number {
   return current
 }
 
+function measurementSlot(reading: GlucoseReading): GlucoseMeasurementSlot {
+  if (reading.measurementContext === 'fasting_morning') return 'morning'
+  if (reading.measurementContext === 'bedtime') return 'night'
+
+  const hour = new Date(reading.timestamp).getHours()
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'afternoon'
+  return 'night'
+}
+
 export function calculateGlucoseMetrics(readings: GlucoseReading[], windowDays: MetricsWindow, asOf = new Date()): GlucoseMetrics {
   const today = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate())
   const firstDay = addDays(today, -(windowDays - 1))
@@ -64,9 +91,13 @@ export function calculateGlucoseMetrics(readings: GlucoseReading[], windowDays: 
   })
   const values = windowReadings.map((reading) => reading.glucoseValue)
   const dayMap = new Map<string, GlucoseReading[]>()
+  const slotMap = new Map<string, Set<GlucoseMeasurementSlot>>()
   for (const reading of windowReadings) {
     const key = dayKey(new Date(reading.timestamp))
     dayMap.set(key, [...(dayMap.get(key) ?? []), reading])
+    const slots = slotMap.get(key) ?? new Set<GlucoseMeasurementSlot>()
+    slots.add(measurementSlot(reading))
+    slotMap.set(key, slots)
   }
   const series = Array.from({ length: windowDays }, (_, index) => {
     const day = dayKey(addDays(firstDay, index))
@@ -74,6 +105,20 @@ export function calculateGlucoseMetrics(readings: GlucoseReading[], windowDays: 
     return { day, value: dayReadings.length ? round(dayReadings.reduce((sum, item) => sum + item.glucoseValue, 0) / dayReadings.length) : null, count: dayReadings.length }
   })
   const flags = series.map((point) => point.count > 0)
+  const dailyCompleteness = series.map((point) => {
+    const slots = slotMap.get(point.day) ?? new Set<GlucoseMeasurementSlot>()
+    return {
+      day: point.day,
+      morning: slots.has('morning'),
+      afternoon: slots.has('afternoon'),
+      night: slots.has('night'),
+      readingCount: point.count,
+      complete: slots.size === 3,
+    }
+  })
+  const completeDays = dailyCompleteness.filter((day) => day.complete).length
+  const continuityPct = round((dayMap.size / windowDays) * 100)
+  const expectedReadings = windowDays * 3
   const mean = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null
   const variance = mean === null || values.length < 2 ? null : values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length
   const sd = variance === null ? null : Math.sqrt(variance)
@@ -84,7 +129,12 @@ export function calculateGlucoseMetrics(readings: GlucoseReading[], windowDays: 
     windowDays,
     totalReadings: values.length,
     daysWithReading: dayMap.size,
-    adherencePct: round((dayMap.size / windowDays) * 100),
+    adherencePct: continuityPct,
+    continuityPct,
+    completeDays,
+    completenessPct: round((completeDays / windowDays) * 100),
+    expectedReadings,
+    slotCoveragePct: expectedReadings ? round(Math.min((values.length / expectedReadings) * 100, 100)) : null,
     mean: mean === null ? null : round(mean),
     minimum: values.length ? Math.min(...values) : null,
     maximum: values.length ? Math.max(...values) : null,
@@ -98,6 +148,7 @@ export function calculateGlucoseMetrics(readings: GlucoseReading[], windowDays: 
     latestReadingAt: windowReadings.length ? windowReadings.reduce((latest, reading) => reading.timestamp > latest.timestamp ? reading : latest).timestamp : null,
     contextCounts,
     series,
+    dailyCompleteness,
   }
 }
 
