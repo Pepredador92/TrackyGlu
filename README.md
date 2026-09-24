@@ -52,6 +52,7 @@ npm run test:integration
 npx playwright install chromium
 npm run test:browser
 npm run db:check
+npm run workflows:check
 ```
 
 Las pruebas de integración y sus utilidades administrativas solo admiten el Supabase local en el puerto 55321. Las pruebas de navegador esperan la aplicación configurada contra ese mismo entorno. Playwright inicia Vite automáticamente si el puerto 5173 está libre. Las capturas quedan en `test-results/previews/`.
@@ -76,6 +77,8 @@ npm run demo:local
 - [Resultados de validación](docs/validation/objective-1.md).
 - [Objetivo 2: captura contextual y dashboards](docs/objective-2.md).
 - [Validación del objetivo 2](docs/validation/objective-2.md).
+- [Objetivo 3: automatización, eventos y evaluación](docs/objective-3.md).
+- [Validación del objetivo 3](docs/validation/objective-3.md).
 - [Inventario de workflows](workflows/README.md).
 
 ## Continuar en otro equipo
@@ -87,3 +90,5 @@ Para alojar el proyecto definitivamente, se confirmarán dominio, correo, config
 El script consolidado para copiar y pegar en el SQL Editor de un Supabase **nuevo y vacío** está en [docs/sql/objetivo-1-supabase.sql](docs/sql/objetivo-1-supabase.sql). Lee primero [sus instrucciones](docs/sql/README.md); no lo ejecutes sobre una instancia existente con datos.
 
 La ampliación SQL del objetivo 2 está en [docs/sql/objetivo-2-supabase.sql](docs/sql/objetivo-2-supabase.sql). Se ejecuta después del SQL del objetivo 1 y agrega el contexto de lecturas y el check-in diario.
+
+La ampliación SQL del objetivo 3 está en [docs/sql/objetivo-3-supabase.sql](docs/sql/objetivo-3-supabase.sql). Se ejecuta después de los objetivos 1 y 2 y agrega el contrato de eventos, workflows y resúmenes persistidos.

@@ -93,7 +93,7 @@
             },
             {
               "fieldId": "workflow_version",
-              "fieldValue": "2.0.0"
+              "fieldValue": "2.1.0"
             },
             {
               "fieldId": "n8n_execution_id",
@@ -142,6 +142,16 @@
               "keyName": "patient_id",
               "condition": "eq",
               "keyValue": "={{ $('SET_ADH_Context').first().json.patient_id }}"
+            },
+            {
+              "keyName": "quality_state",
+              "condition": "eq",
+              "keyValue": "valid"
+            },
+            {
+              "keyName": "processing_state",
+              "condition": "eq",
+              "keyValue": "persisted"
             }
           ]
         }
@@ -180,6 +190,16 @@
               "keyName": "measured_at",
               "condition": "gte",
               "keyValue": "={{ $('SET_ADH_Context').first().json.recent_cutoff_iso }}"
+            },
+            {
+              "keyName": "quality_state",
+              "condition": "eq",
+              "keyValue": "valid"
+            },
+            {
+              "keyName": "processing_state",
+              "condition": "eq",
+              "keyValue": "persisted"
             }
           ]
         }
@@ -202,7 +222,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const readings = $input.all()\n  .map(item => item.json)\n  .filter(r => r && r.measured_at && r.patient_id);\n\nconst ctx = $('SET_ADH_Context').first().json;\nconst latest = $('Get Latest Reading').first()?.json ?? {};\n\nconst patientId = String(ctx.patient_id);\nconst periodEndDate = String(ctx.period_end_date);\nconst timezone = String(ctx.timezone || 'America/Mexico_City');\nconst windowDaysList = [7, 14, 30];\nconst abandonmentThresholdDays = Number(ctx.abandonment_threshold_days || 7);\nconst workflowRunId = $('Create ADH Workflow Run').first().json.id;\n\nfunction localDateFromIso(iso, tz) {\n  if (!iso) return null;\n  const d = new Date(iso);\n  if (Number.isNaN(d.getTime())) return null;\n\n  const parts = new Intl.DateTimeFormat('en-CA', {\n    timeZone: tz,\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit',\n  }).formatToParts(d);\n\n  const map = {};\n  for (const p of parts) {\n    if (p.type !== 'literal') map[p.type] = p.value;\n  }\n  return `${map.year}-${map.month}-${map.day}`;\n}\n\nfunction parseDateOnly(dateStr) {\n  const [y, m, d] = String(dateStr).split('-').map(Number);\n  return new Date(Date.UTC(y, m - 1, d));\n}\n\nfunction formatDateOnly(dateObj) {\n  return dateObj.toISOString().slice(0, 10);\n}\n\nfunction addDays(dateObj, days) {\n  const d = new Date(dateObj.getTime());\n  d.setUTCDate(d.getUTCDate() + days);\n  return d;\n}\n\nfunction diffDays(dateA, dateB) {\n  return Math.round((dateA.getTime() - dateB.getTime()) / 86400000);\n}\n\nfunction roundTo(value, decimals) {\n  const factor = 10 ** decimals;\n  return Math.round(value * factor) / factor;\n}\n\nfunction buildWindowDates(startDateStr, endDateStr) {\n  const start = parseDateOnly(startDateStr);\n  const end = parseDateOnly(endDateStr);\n  const dates = [];\n  let cursor = new Date(start.getTime());\n\n  while (cursor.getTime() <= end.getTime()) {\n    dates.push(formatDateOnly(cursor));\n    cursor = addDays(cursor, 1);\n  }\n  return dates;\n}\n\nfunction computeMaxRun(flags, targetValue) {\n  let maxRun = 0;\n  let current = 0;\n  for (const f of flags) {\n    if (f === targetValue) {\n      current += 1;\n      if (current > maxRun) maxRun = current;\n    } else {\n      current = 0;\n    }\n  }\n  return maxRun;\n}\n\nfunction computeCurrentStreak(flags) {\n  let streak = 0;\n  for (let i = flags.length - 1; i >= 0; i--) {\n    if (flags[i] === 1) streak += 1;\n    else break;\n  }\n  return streak;\n}\n\n// La tabla glucose_readings ya garantiza event_id único.\n// Aun así, deduplicamos defensivamente.\nconst dedup = new Map();\n\nfor (const r of readings) {\n  if (String(r.patient_id) !== patientId) continue;\n\n  const key = r.event_id || r.id;\n  if (!key || dedup.has(key)) continue;\n\n  const localDate = localDateFromIso(r.measured_at, timezone);\n  if (!localDate || localDate > periodEndDate) continue;\n\n  dedup.set(key, {\n    ...r,\n    local_date: localDate,\n  });\n}\n\nconst safeReadings = [...dedup.values()]\n  .sort((a, b) => String(a.measured_at).localeCompare(String(b.measured_at)));\n\nconst periodEnd = parseDateOnly(periodEndDate);\n\nconst lastReadingAt =\n  latest && latest.measured_at\n    ? String(latest.measured_at)\n    : (safeReadings.length ? String(safeReadings[safeReadings.length - 1].measured_at) : null);\n\nconst lastReadingDate = lastReadingAt\n  ? localDateFromIso(lastReadingAt, timezone)\n  : null;\n\nlet daysSinceLastReading = null;\nlet abandonedFlag = false;\n\nif (lastReadingDate) {\n  daysSinceLastReading = diffDays(periodEnd, parseDateOnly(lastReadingDate));\n  abandonedFlag = daysSinceLastReading >= abandonmentThresholdDays;\n}\n\nconst calculatedAt = new Date().toISOString();\nconst output = [];\n\nfor (const windowDays of windowDaysList) {\n  const windowStart = formatDateOnly(addDays(periodEnd, -(windowDays - 1)));\n\n  const windowReadings = safeReadings.filter(\n    r => r.local_date >= windowStart && r.local_date <= periodEndDate\n  );\n\n  const activeDateSet = new Set(windowReadings.map(r => r.local_date));\n  const windowDates = buildWindowDates(windowStart, periodEndDate);\n  const flags = windowDates.map(d => activeDateSet.has(d) ? 1 : 0);\n\n  const daysWithReading = activeDateSet.size;\n  const totalReadings = windowReadings.length;\n\n  output.push({\n    json: {\n      patient_id: patientId,\n      period_end_date: periodEndDate,\n      window_days: windowDays,\n      days_with_reading: daysWithReading,\n      total_readings: totalReadings,\n      adherence_pct: roundTo((daysWithReading / windowDays) * 100, 1),\n      readings_per_week: roundTo((totalReadings / windowDays) * 7, 2),\n      max_streak_days: computeMaxRun(flags, 1),\n      current_streak_days: computeCurrentStreak(flags),\n      max_gap_days: computeMaxRun(flags, 0),\n      last_reading_at: lastReadingAt,\n      days_since_last_reading: daysSinceLastReading,\n      abandoned_flag: abandonedFlag,\n      retention_30_flag: windowDays === 30 ? daysWithReading > 0 : null,\n      workflow_run_id: workflowRunId,\n      calculated_at: calculatedAt,\n      causation_event_id: ctx.causation_event_id || null\n    }\n  });\n}\n\nreturn output;"
+        "jsCode": "const readings = $input.all()\n  .map(item => item.json)\n  .filter(r => r && r.measured_at && r.patient_id);\n\nconst ctx = $('SET_ADH_Context').first().json;\nconst latest = $('Get Latest Reading').first()?.json ?? {};\n\nconst patientId = String(ctx.patient_id);\nconst periodEndDate = String(ctx.period_end_date);\nconst timezone = String(ctx.timezone || 'America/Mexico_City');\nconst windowDaysList = [7, 14, 30];\nconst abandonmentThresholdDays = Number(ctx.abandonment_threshold_days || 7);\nconst workflowRunId = $('Create ADH Workflow Run').first().json.id;\n\nfunction localDateFromIso(iso, tz) {\n  if (!iso) return null;\n  const d = new Date(iso);\n  if (Number.isNaN(d.getTime())) return null;\n\n  const parts = new Intl.DateTimeFormat('en-CA', {\n    timeZone: tz,\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit',\n  }).formatToParts(d);\n\n  const map = {};\n  for (const p of parts) {\n    if (p.type !== 'literal') map[p.type] = p.value;\n  }\n  return map.year + '-' + map.month + '-' + map.day;\n}\n\nfunction localHourFromIso(iso, tz) {\n  const formatted = new Intl.DateTimeFormat('en-US', {\n    timeZone: tz,\n    hour: '2-digit',\n    hour12: false,\n  }).format(new Date(iso));\n  const hour = Number(formatted);\n  return hour === 24 ? 0 : hour;\n}\n\nfunction parseDateOnly(dateStr) {\n  const [y, m, d] = String(dateStr).split('-').map(Number);\n  return new Date(Date.UTC(y, m - 1, d));\n}\n\nfunction formatDateOnly(dateObj) {\n  return dateObj.toISOString().slice(0, 10);\n}\n\nfunction addDays(dateObj, days) {\n  const d = new Date(dateObj.getTime());\n  d.setUTCDate(d.getUTCDate() + days);\n  return d;\n}\n\nfunction diffDays(dateA, dateB) {\n  return Math.round((dateA.getTime() - dateB.getTime()) / 86400000);\n}\n\nfunction roundTo(value, decimals) {\n  const factor = 10 ** decimals;\n  return Math.round(value * factor) / factor;\n}\n\nfunction buildWindowDates(startDateStr, endDateStr) {\n  const start = parseDateOnly(startDateStr);\n  const end = parseDateOnly(endDateStr);\n  const dates = [];\n  let cursor = new Date(start.getTime());\n\n  while (cursor.getTime() <= end.getTime()) {\n    dates.push(formatDateOnly(cursor));\n    cursor = addDays(cursor, 1);\n  }\n  return dates;\n}\n\nfunction computeMaxRun(flags, targetValue) {\n  let maxRun = 0;\n  let current = 0;\n  for (const f of flags) {\n    if (f === targetValue) {\n      current += 1;\n      if (current > maxRun) maxRun = current;\n    } else {\n      current = 0;\n    }\n  }\n  return maxRun;\n}\n\nfunction computeCurrentStreak(flags) {\n  let streak = 0;\n  for (let i = flags.length - 1; i >= 0; i--) {\n    if (flags[i] === 1) streak += 1;\n    else break;\n  }\n  return streak;\n}\n\nfunction measurementSlot(reading, tz) {\n  if (reading.measurement_context === 'fasting_morning') return 'morning';\n  if (reading.measurement_context === 'bedtime') return 'night';\n  const hour = localHourFromIso(reading.measured_at, tz);\n  if (hour < 12) return 'morning';\n  if (hour < 18) return 'afternoon';\n  return 'night';\n}\n\n// La tabla glucose_readings ya garantiza event_id único.\n// Aun así, deduplicamos defensivamente antes de calcular.\nconst dedup = new Map();\n\nfor (const r of readings) {\n  if (String(r.patient_id) !== patientId) continue;\n\n  const key = r.event_id || r.id;\n  if (!key || dedup.has(key)) continue;\n\n  const localDate = localDateFromIso(r.measured_at, timezone);\n  if (!localDate || localDate > periodEndDate) continue;\n\n  dedup.set(key, {\n    ...r,\n    local_date: localDate,\n  });\n}\n\nconst safeReadings = [...dedup.values()]\n  .sort((a, b) => String(a.measured_at).localeCompare(String(b.measured_at)));\n\nconst slotsByDate = new Map();\nfor (const reading of safeReadings) {\n  const slots = slotsByDate.get(reading.local_date) || new Set();\n  slots.add(measurementSlot(reading, timezone));\n  slotsByDate.set(reading.local_date, slots);\n}\n\nconst periodEnd = parseDateOnly(periodEndDate);\nconst lastReadingAt = latest && latest.measured_at\n  ? String(latest.measured_at)\n  : (safeReadings.length ? String(safeReadings[safeReadings.length - 1].measured_at) : null);\nconst lastReadingDate = lastReadingAt ? localDateFromIso(lastReadingAt, timezone) : null;\nlet daysSinceLastReading = null;\nlet abandonedFlag = false;\n\nif (lastReadingDate) {\n  daysSinceLastReading = diffDays(periodEnd, parseDateOnly(lastReadingDate));\n  abandonedFlag = daysSinceLastReading >= abandonmentThresholdDays;\n}\n\nconst calculatedAt = new Date().toISOString();\nconst output = [];\n\nfor (const windowDays of windowDaysList) {\n  const windowStart = formatDateOnly(addDays(periodEnd, -(windowDays - 1)));\n  const windowReadings = safeReadings.filter(\n    r => r.local_date >= windowStart && r.local_date <= periodEndDate\n  );\n  const activeDateSet = new Set(windowReadings.map(r => r.local_date));\n  const windowDates = buildWindowDates(windowStart, periodEndDate);\n  const flags = windowDates.map(d => activeDateSet.has(d) ? 1 : 0);\n  const dailySlots = windowDates.map(day => {\n    const slots = slotsByDate.get(day) || new Set();\n    return {\n      day,\n      morning: slots.has('morning'),\n      afternoon: slots.has('afternoon'),\n      night: slots.has('night'),\n      reading_count: windowReadings.filter(r => r.local_date === day).length,\n      complete: slots.size === 3,\n    };\n  });\n  const daysWithReading = activeDateSet.size;\n  const totalReadings = windowReadings.length;\n  const completeDays = dailySlots.filter(day => day.complete).length;\n  const expectedReadings = windowDays * 3;\n\n  output.push({\n    json: {\n      patient_id: patientId,\n      period_end_date: periodEndDate,\n      window_days: windowDays,\n      days_with_reading: daysWithReading,\n      total_readings: totalReadings,\n      adherence_pct: roundTo((daysWithReading / windowDays) * 100, 1),\n      readings_per_week: roundTo((totalReadings / windowDays) * 7, 2),\n      max_streak_days: computeMaxRun(flags, 1),\n      current_streak_days: computeCurrentStreak(flags),\n      max_gap_days: computeMaxRun(flags, 0),\n      last_reading_at: lastReadingAt,\n      days_since_last_reading: daysSinceLastReading,\n      abandoned_flag: abandonedFlag,\n      retention_30_flag: windowDays === 30 ? daysWithReading > 0 : null,\n      complete_days: completeDays,\n      completeness_pct: roundTo((completeDays / windowDays) * 100, 1),\n      expected_readings: expectedReadings,\n      slot_coverage_pct: roundTo(Math.min((totalReadings / expectedReadings) * 100, 100), 1),\n      daily_slots: dailySlots,\n      workflow_run_id: workflowRunId,\n      calculated_at: calculatedAt,\n      causation_event_id: ctx.causation_event_id || null\n    }\n  });\n}\n\nreturn output;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -380,6 +400,26 @@
             {
               "fieldId": "calculated_at",
               "fieldValue": "={{ $('Loop Summaries').item.json.calculated_at }}"
+            },
+            {
+              "fieldId": "complete_days",
+              "fieldValue": "={{ $('Loop Summaries').item.json.complete_days }}"
+            },
+            {
+              "fieldId": "completeness_pct",
+              "fieldValue": "={{ $('Loop Summaries').item.json.completeness_pct }}"
+            },
+            {
+              "fieldId": "expected_readings",
+              "fieldValue": "={{ $('Loop Summaries').item.json.expected_readings }}"
+            },
+            {
+              "fieldId": "slot_coverage_pct",
+              "fieldValue": "={{ $('Loop Summaries').item.json.slot_coverage_pct }}"
+            },
+            {
+              "fieldId": "daily_slots",
+              "fieldValue": "={{ $('Loop Summaries').item.json.daily_slots }}"
             }
           ]
         }
@@ -467,6 +507,26 @@
             {
               "fieldId": "calculated_at",
               "fieldValue": "={{ $('Loop Summaries').item.json.calculated_at }}"
+            },
+            {
+              "fieldId": "complete_days",
+              "fieldValue": "={{ $('Loop Summaries').item.json.complete_days }}"
+            },
+            {
+              "fieldId": "completeness_pct",
+              "fieldValue": "={{ $('Loop Summaries').item.json.completeness_pct }}"
+            },
+            {
+              "fieldId": "expected_readings",
+              "fieldValue": "={{ $('Loop Summaries').item.json.expected_readings }}"
+            },
+            {
+              "fieldId": "slot_coverage_pct",
+              "fieldValue": "={{ $('Loop Summaries').item.json.slot_coverage_pct }}"
+            },
+            {
+              "fieldId": "daily_slots",
+              "fieldValue": "={{ $('Loop Summaries').item.json.daily_slots }}"
             }
           ]
         }
