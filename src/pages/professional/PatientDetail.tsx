@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { CheckCircle2, FileText, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Download, FileText, ShieldCheck } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../components/auth/useAuth'
 import PageShell from '../../components/layout/PageShell'
@@ -25,6 +25,7 @@ export default function PatientDetail() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [isExporting, setIsExporting] = useState(false)
   const [reload, setReload] = useState(0)
   useEffect(() => {
     let active = true
@@ -45,11 +46,32 @@ export default function PatientDetail() {
     try { await endAssignment(patientId!, profile!.entityId!); navigate('/professional') }
     catch { setError('No pudimos finalizar el vínculo.'); setBusy(false) }
   }
+  async function exportReport() {
+    setIsExporting(true)
+    try {
+      const { generateGlucoseReportPdf } = await import('../../services/report/glucoseReportPdf')
+      generateGlucoseReportPdf({
+        patientName: name || 'Paciente',
+        patientId,
+        history: record,
+        readings,
+        metrics,
+        professionalName: profile?.displayName ?? undefined,
+        reviews,
+        reportRole: 'professional',
+        periodLabel: 'Últimos 30 días',
+      })
+    } catch {
+      setError('No pudimos generar el PDF. Intenta nuevamente.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
   const latestReview = record && reviews.find((review) => review.history_revision === record.revision)
   const metrics = calculateGlucoseMetrics(readings, 30)
   return <PageShell professional back="/professional">{loading ? <p role="status">Cargando historia…</p> : <>
     {error && <div className="feedback error" role="alert">{error} <button className="inline-button" onClick={() => setReload((value) => value + 1)}>Recargar historia</button></div>}
-    {record && <><div className="professional-intro"><div><p className="eyebrow">SEGUIMIENTO DEL PACIENTE</p><h1>{name}</h1><p className="lead">Lecturas de los últimos 30 días · Historia versión {record.revision}</p></div><span className={`status-badge ${latestReview ? 'ready' : ''}`}>{latestReview ? 'Revisión registrada' : record.completed_at ? 'Pendiente de revisión' : 'En progreso'}</span></div>
+    {record && <><div className="professional-intro"><div><p className="eyebrow">SEGUIMIENTO DEL PACIENTE</p><h1>{name}</h1><p className="lead">Lecturas de los últimos 30 días · Historia versión {record.revision}</p></div><button className="secondary-button" type="button" onClick={exportReport} disabled={isExporting}><Download size={17} />{isExporting ? 'Preparando...' : 'Exportar PDF'}</button><span className={`status-badge ${latestReview ? 'ready' : ''}`}>{latestReview ? 'Revisión registrada' : record.completed_at ? 'Pendiente de revisión' : 'En progreso'}</span></div>
     {notice && <p className="feedback success" role="status">{notice}</p>}
     <section className="surface patient-glucose-summary" aria-labelledby="patient-glucose-title"><div className="card-heading"><h2 id="patient-glucose-title">Glucosa registrada</h2><span className="muted">30 días</span></div><MetricsCards metrics={metrics} /><GlucoseTrendChart metrics={metrics} /><GlucoseCompletenessChart metrics={metrics} /><GlucoseZonesChart metrics={metrics} /><MetricDetails metrics={metrics} /><MetricDisclaimer /></section>
     <div className="profile-columns"><section className="surface"><div className="card-heading"><FileText size={22} /><h2>Historia del paciente</h2></div><HistorySummary data={record.data} /></section><aside className="form-stack">

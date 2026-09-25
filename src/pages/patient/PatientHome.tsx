@@ -1,31 +1,43 @@
-import { Clock3, History, LogOut, Plus, UserRound } from 'lucide-react'
+import { Clock3, Download, History, LogOut, Plus, UserRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../components/auth/useAuth'
 import { getReadings } from '../../services/glucose/glucoseService'
+import { getHistory, getHistoryReviews } from '../../services/profileService'
 import { calculateGlucoseMetrics } from '../../services/glucose/glucoseMetrics'
 import { GlucoseCompletenessChart, GlucoseTrendChart, GlucoseZonesChart, MetricDetails, MetricDisclaimer, MetricsCards } from '../../components/glucose/GlucoseDashboard'
 import type { GlucoseReading } from '../../types/glucose'
+import type { HistoryReview, PatientHistory } from '../../types/clinicalHistory'
 import { GLUCOSE_CONTEXT_LABELS, formatReadingDateTime, isToday } from '../../utils/glucose'
 import './PatientHome.css'
 
 function PatientHome() {
   const { profile, signOut } = useAuth()
   const [readings, setReadings] = useState<GlucoseReading[]>([])
+  const [history, setHistory] = useState<PatientHistory | null>(null)
+  const [reviews, setReviews] = useState<HistoryReview[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
     let isCurrent = true
 
     async function loadReadings() {
+      if (!profile?.entityId) return
       setIsLoading(true)
       setHasError(false)
 
       try {
-        const storedReadings = await getReadings()
+        const [storedReadings, storedHistory, storedReviews] = await Promise.all([
+          getReadings(),
+          getHistory(profile.entityId),
+          getHistoryReviews(profile.entityId),
+        ])
         if (isCurrent) {
           setReadings(storedReadings)
+          setHistory(storedHistory)
+          setReviews(storedReviews)
         }
       } catch {
         if (isCurrent) {
@@ -43,7 +55,28 @@ function PatientHome() {
     return () => {
       isCurrent = false
     }
-  }, [])
+  }, [profile?.entityId])
+
+  async function exportReport() {
+    setIsExporting(true)
+    try {
+      const { generateGlucoseReportPdf } = await import('../../services/report/glucoseReportPdf')
+      generateGlucoseReportPdf({
+        patientName: profile?.displayName ?? 'Paciente',
+        patientId: profile?.entityId ?? undefined,
+        history,
+        readings: validReadings,
+        metrics,
+        reviews,
+        reportRole: 'patient',
+        periodLabel: `Últimos ${metrics.windowDays} días`,
+      })
+    } catch {
+      setHasError(true)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const validReadings = readings
     .filter((reading) => !Number.isNaN(new Date(reading.timestamp).getTime()))
@@ -111,7 +144,7 @@ function PatientHome() {
           )}
         </section>
 
-        {!isLoading && !hasError && <section className="patient-metrics" aria-labelledby="patient-metrics-title"><div className="section-heading"><div><h2 id="patient-metrics-title">Tu seguimiento</h2><p className="metrics-period">Últimos 14 días</p></div></div><MetricsCards metrics={metrics} /><GlucoseTrendChart metrics={metrics} /><GlucoseCompletenessChart metrics={metrics} /><GlucoseZonesChart metrics={metrics} /><MetricDetails metrics={metrics} /><MetricDisclaimer /></section>}
+        {!isLoading && !hasError && <section className="patient-metrics" aria-labelledby="patient-metrics-title"><div className="section-heading"><div><h2 id="patient-metrics-title">Tu seguimiento</h2><p className="metrics-period">Últimos 14 días</p></div><button className="report-export-button" type="button" onClick={exportReport} disabled={isExporting}><Download size={17} strokeWidth={2} aria-hidden="true" /><span>{isExporting ? 'Preparando...' : 'Exportar PDF'}</span></button></div><MetricsCards metrics={metrics} /><GlucoseTrendChart metrics={metrics} /><GlucoseCompletenessChart metrics={metrics} /><GlucoseZonesChart metrics={metrics} /><MetricDetails metrics={metrics} /><MetricDisclaimer /></section>}
 
         <Link className="records-link" to="/mis-registros">
           <History size={18} strokeWidth={1.9} aria-hidden="true" />
