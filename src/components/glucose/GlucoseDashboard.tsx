@@ -15,7 +15,20 @@ export function MetricsCards({ metrics, compact = false }: { metrics: GlucoseMet
     { label: 'Continuidad', value: formatMetric(metrics.continuityPct, '%'), detail: 'días con ≥1 lectura', icon: CalendarDays },
     { label: 'Completitud', value: formatMetric(metrics.completenessPct, '%'), detail: 'días con 3 franjas', icon: CheckCircle2 },
   ]
-  return <div className={`metrics-cards${compact ? ' metrics-cards--compact' : ''}`}>{cards.map(({ label, value, detail, icon: Icon }) => <article className="metric-card" key={label}><span className="metric-card__icon"><Icon size={18} /></span><div><span className="metric-card__label">{label}</span><strong>{value}</strong><small>{detail}</small></div></article>)}</div>
+  return (
+    <div className={`metrics-cards${compact ? ' metrics-cards--compact' : ''}`}>
+      {cards.map(({ label, value, detail, icon: Icon }) => (
+        <article className="metric-card" key={label}>
+          <span className="metric-card__icon" aria-hidden="true"><Icon size={16} /></span>
+          <div className="metric-card__content">
+            <span className="metric-card__label">{label}</span>
+            <strong className="metric-card__value">{value}</strong>
+            <small className="metric-card__detail">{detail}</small>
+          </div>
+        </article>
+      ))}
+    </div>
+  )
 }
 
 export function MetricDetails({ metrics }: { metrics: GlucoseMetrics }) {
