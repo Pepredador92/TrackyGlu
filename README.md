@@ -86,6 +86,7 @@ npm run demo:local
 - [Validación del objetivo 4](docs/validation/objective-4.md).
 - [Objetivo 5: apoyo con IA](docs/objective-5.md).
 - [Validación del objetivo 5](docs/validation/objective-5.md).
+- [Exportación compacta de reportes PDF](docs/reports/glucose-pdf.md).
 - [Inventario de workflows](workflows/README.md).
 
 ## Continuar en otro equipo
