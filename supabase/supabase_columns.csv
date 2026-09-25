@@ -1,0 +1,172 @@
+table_schema,table_name,ordinal_position,column_name,data_type,udt_name,is_nullable,column_default
+public,adherence_summary,1,id,uuid,uuid,NO,gen_random_uuid()
+public,adherence_summary,2,patient_id,uuid,uuid,NO,
+public,adherence_summary,3,window_days,integer,int4,NO,
+public,adherence_summary,4,period_end_date,date,date,NO,
+public,adherence_summary,5,days_with_reading,integer,int4,NO,
+public,adherence_summary,6,total_readings,integer,int4,NO,
+public,adherence_summary,7,adherence_pct,numeric,numeric,NO,
+public,adherence_summary,8,readings_per_week,numeric,numeric,NO,
+public,adherence_summary,9,max_streak_days,integer,int4,NO,
+public,adherence_summary,10,current_streak_days,integer,int4,NO,
+public,adherence_summary,11,max_gap_days,integer,int4,NO,
+public,adherence_summary,12,last_reading_at,timestamp with time zone,timestamptz,YES,
+public,adherence_summary,13,days_since_last_reading,integer,int4,YES,
+public,adherence_summary,14,abandoned_flag,boolean,bool,NO,false
+public,adherence_summary,15,retention_30_flag,boolean,bool,YES,
+public,adherence_summary,16,complete_days,integer,int4,NO,0
+public,adherence_summary,17,completeness_pct,numeric,numeric,NO,0
+public,adherence_summary,18,expected_readings,integer,int4,NO,0
+public,adherence_summary,19,slot_coverage_pct,numeric,numeric,NO,0
+public,adherence_summary,20,daily_slots,jsonb,jsonb,NO,'[]'::jsonb
+public,adherence_summary,21,workflow_run_id,uuid,uuid,YES,
+public,adherence_summary,22,calculated_at,timestamp with time zone,timestamptz,NO,now()
+public,adherence_summary,23,created_at,timestamp with time zone,timestamptz,NO,now()
+public,adherence_summary,24,updated_at,timestamp with time zone,timestamptz,NO,now()
+public,alerts,1,id,uuid,uuid,NO,gen_random_uuid()
+public,alerts,2,event_id,uuid,uuid,NO,gen_random_uuid()
+public,alerts,3,patient_id,uuid,uuid,NO,
+public,alerts,4,source_reading_id,uuid,uuid,YES,
+public,alerts,5,alert_type,text,text,NO,
+public,alerts,6,severity,text,text,NO,
+public,alerts,7,status,text,text,NO,'open'::text
+public,alerts,8,reason,text,text,NO,
+public,alerts,9,metadata,jsonb,jsonb,NO,'{}'::jsonb
+public,alerts,10,acknowledged_at,timestamp with time zone,timestamptz,YES,
+public,alerts,11,closed_at,timestamp with time zone,timestamptz,YES,
+public,alerts,12,acknowledged_by_professional_id,uuid,uuid,YES,
+public,alerts,13,created_at,timestamp with time zone,timestamptz,NO,now()
+public,alerts,14,source_event_id,uuid,uuid,YES,
+public,alerts,15,workflow_run_id,uuid,uuid,YES,
+public,clinical_tasks,1,id,uuid,uuid,NO,gen_random_uuid()
+public,clinical_tasks,2,event_id,uuid,uuid,NO,gen_random_uuid()
+public,clinical_tasks,3,patient_id,uuid,uuid,NO,
+public,clinical_tasks,4,source_event_id,uuid,uuid,YES,
+public,clinical_tasks,5,source_alert_id,uuid,uuid,YES,
+public,clinical_tasks,6,trigger_rule,text,text,NO,
+public,clinical_tasks,7,priority,text,text,NO,
+public,clinical_tasks,8,status,text,text,NO,'pending_review'::text
+public,clinical_tasks,9,assigned_professional_id,uuid,uuid,YES,
+public,clinical_tasks,10,first_review_at,timestamp with time zone,timestamptz,YES,
+public,clinical_tasks,11,closed_at,timestamp with time zone,timestamptz,YES,
+public,clinical_tasks,12,final_decision,text,text,YES,
+public,clinical_tasks,13,review_note,text,text,YES,
+public,clinical_tasks,14,ai_draft_status,text,text,NO,'not_requested'::text
+public,clinical_tasks,15,created_at,timestamp with time zone,timestamptz,NO,now()
+public,clinical_tasks,16,workflow_run_id,uuid,uuid,YES,
+public,events,1,event_id,uuid,uuid,NO,gen_random_uuid()
+public,events,2,patient_id,uuid,uuid,NO,
+public,events,3,event_type,text,text,NO,
+public,events,4,entity_type,text,text,NO,
+public,events,5,entity_id,uuid,uuid,NO,
+public,events,6,causation_event_id,uuid,uuid,YES,
+public,events,7,actor_type,text,text,NO,
+public,events,8,actor_profile_id,uuid,uuid,YES,
+public,events,9,source_channel,text,text,NO,'n8n'::text
+public,events,10,workflow_run_id,uuid,uuid,YES,
+public,events,11,previous_state,jsonb,jsonb,YES,
+public,events,12,new_state,jsonb,jsonb,YES,
+public,events,13,metadata,jsonb,jsonb,NO,'{}'::jsonb
+public,events,14,created_at,timestamp with time zone,timestamptz,NO,now()
+public,glucose_daily_context,1,id,uuid,uuid,NO,gen_random_uuid()
+public,glucose_daily_context,2,patient_id,uuid,uuid,NO,
+public,glucose_daily_context,3,local_date,date,date,NO,
+public,glucose_daily_context,4,treatment_adherence_24h,boolean,bool,YES,
+public,glucose_daily_context,5,missed_doses_7d,text,text,YES,
+public,glucose_daily_context,6,missed_dose_reason,text,text,YES,
+public,glucose_daily_context,7,illness_flag,boolean,bool,YES,
+public,glucose_daily_context,8,stress_flag,boolean,bool,YES,
+public,glucose_daily_context,9,sleep_quality,text,text,YES,
+public,glucose_daily_context,10,created_at,timestamp with time zone,timestamptz,NO,now()
+public,glucose_daily_context,11,updated_at,timestamp with time zone,timestamptz,NO,now()
+public,glucose_readings,1,id,uuid,uuid,NO,gen_random_uuid()
+public,glucose_readings,2,event_id,uuid,uuid,NO,gen_random_uuid()
+public,glucose_readings,3,patient_id,uuid,uuid,NO,
+public,glucose_readings,4,glucose_value,numeric,numeric,NO,
+public,glucose_readings,5,unit,text,text,NO,'mg/dL'::text
+public,glucose_readings,6,measurement_context,text,text,NO,
+public,glucose_readings,7,measured_at,timestamp with time zone,timestamptz,NO,
+public,glucose_readings,8,source_channel,text,text,NO,'web'::text
+public,glucose_readings,9,created_at,timestamp with time zone,timestamptz,NO,now()
+public,glucose_readings,10,recorded_by_profile_id,uuid,uuid,YES,private.my_profile_id()
+public,glucose_readings,11,recorded_by_actor_type,text,text,YES,'patient'::text
+public,glucose_readings,12,measurement_source,text,text,NO,'capillary'::text
+public,glucose_readings,13,has_eaten,boolean,bool,YES,
+public,glucose_readings,14,last_meal_at,timestamp with time zone,timestamptz,YES,
+public,glucose_readings,15,meal_type,text,text,YES,
+public,glucose_readings,16,carbohydrate_estimate,smallint,int2,YES,
+public,glucose_readings,17,treatment_due_before_measurement,boolean,bool,YES,
+public,glucose_readings,18,treatment_taken_as_scheduled,boolean,bool,YES,
+public,glucose_readings,19,recent_physical_activity,boolean,bool,YES,
+public,glucose_readings,20,activity_duration_min,smallint,int2,YES,
+public,glucose_readings,21,activity_intensity,text,text,YES,
+public,glucose_readings,22,symptoms_present,boolean,bool,YES,
+public,glucose_readings,23,symptoms,jsonb,jsonb,NO,'[]'::jsonb
+public,glucose_readings,24,illness_flag,boolean,bool,YES,
+public,glucose_readings,25,stress_flag,boolean,bool,YES,
+public,glucose_readings,26,sleep_quality,text,text,YES,
+public,glucose_readings,27,observation,text,text,YES,
+public,glucose_readings,28,access_channel,text,text,NO,'direct_url'::text
+public,glucose_readings,29,quality_state,text,text,NO,'valid'::text
+public,glucose_readings,30,processing_state,text,text,NO,'persisted'::text
+public,patient_histories,1,patient_id,uuid,uuid,NO,
+public,patient_histories,2,data,jsonb,jsonb,NO,'{}'::jsonb
+public,patient_histories,3,current_step,integer,int4,NO,0
+public,patient_histories,4,revision,integer,int4,NO,0
+public,patient_histories,5,completed_at,timestamp with time zone,timestamptz,YES,
+public,patient_histories,6,updated_at,timestamp with time zone,timestamptz,NO,now()
+public,patient_history_reviews,1,id,uuid,uuid,NO,gen_random_uuid()
+public,patient_history_reviews,2,patient_id,uuid,uuid,NO,
+public,patient_history_reviews,3,professional_id,uuid,uuid,NO,
+public,patient_history_reviews,4,history_revision,integer,int4,NO,
+public,patient_history_reviews,5,note,text,text,NO,
+public,patient_history_reviews,6,reviewed_at,timestamp with time zone,timestamptz,NO,now()
+public,patient_history_versions,1,id,uuid,uuid,NO,gen_random_uuid()
+public,patient_history_versions,2,patient_id,uuid,uuid,NO,
+public,patient_history_versions,3,revision,integer,int4,NO,
+public,patient_history_versions,4,data,jsonb,jsonb,NO,
+public,patient_history_versions,5,actor_profile_id,uuid,uuid,NO,
+public,patient_history_versions,6,created_at,timestamp with time zone,timestamptz,NO,now()
+public,patient_invitations,1,id,uuid,uuid,NO,gen_random_uuid()
+public,patient_invitations,2,professional_id,uuid,uuid,NO,
+public,patient_invitations,3,code,text,text,NO,upper(replace((gen_random_uuid())::text, '-'::text, ''::text))
+public,patient_invitations,4,expires_at,timestamp with time zone,timestamptz,NO,(now() + '7 days'::interval)
+public,patient_invitations,5,accepted_by,uuid,uuid,YES,
+public,patient_invitations,6,accepted_at,timestamp with time zone,timestamptz,YES,
+public,patient_invitations,7,revoked_at,timestamp with time zone,timestamptz,YES,
+public,patient_invitations,8,created_at,timestamp with time zone,timestamptz,NO,now()
+public,patients,1,id,uuid,uuid,NO,gen_random_uuid()
+public,patients,2,profile_id,uuid,uuid,NO,
+public,patients,3,created_at,timestamp with time zone,timestamptz,NO,now()
+public,professional_patients,1,professional_id,uuid,uuid,NO,
+public,professional_patients,2,patient_id,uuid,uuid,NO,
+public,professional_patients,3,active,boolean,bool,NO,true
+public,professional_patients,4,linked_at,timestamp with time zone,timestamptz,NO,now()
+public,professional_patients,5,ended_at,timestamp with time zone,timestamptz,YES,
+public,professionals,1,id,uuid,uuid,NO,gen_random_uuid()
+public,professionals,2,profile_id,uuid,uuid,NO,
+public,professionals,3,specialty,text,text,NO,''::text
+public,professionals,4,license_number,text,text,NO,''::text
+public,professionals,5,institution,text,text,NO,''::text
+public,professionals,6,phone,text,text,NO,''::text
+public,professionals,7,completed_at,timestamp with time zone,timestamptz,YES,
+public,professionals,8,created_at,timestamp with time zone,timestamptz,NO,now()
+public,profiles,1,id,uuid,uuid,NO,gen_random_uuid()
+public,profiles,2,user_id,uuid,uuid,NO,
+public,profiles,3,role,text,text,NO,
+public,profiles,4,display_name,text,text,NO,
+public,profiles,5,created_at,timestamp with time zone,timestamptz,NO,now()
+public,workflow_runs,1,id,uuid,uuid,NO,gen_random_uuid()
+public,workflow_runs,2,workflow_key,text,text,NO,
+public,workflow_runs,3,workflow_name,text,text,NO,
+public,workflow_runs,4,workflow_version,text,text,NO,
+public,workflow_runs,5,n8n_execution_id,text,text,YES,
+public,workflow_runs,6,status,text,text,NO,'running'::text
+public,workflow_runs,7,trigger_event_id,uuid,uuid,YES,
+public,workflow_runs,8,input_payload,jsonb,jsonb,NO,'{}'::jsonb
+public,workflow_runs,9,output_payload,jsonb,jsonb,YES,
+public,workflow_runs,10,error_message,text,text,YES,
+public,workflow_runs,11,started_at,timestamp with time zone,timestamptz,NO,now()
+public,workflow_runs,12,finished_at,timestamp with time zone,timestamptz,YES,
+public,workflow_runs,13,created_at,timestamp with time zone,timestamptz,NO,now()
+(170 rows)

@@ -1,0 +1,17 @@
+schemaname,tablename
+public,adherence_summary
+public,alerts
+public,clinical_tasks
+public,events
+public,glucose_daily_context
+public,glucose_readings
+public,patient_histories
+public,patient_history_reviews
+public,patient_history_versions
+public,patient_invitations
+public,patients
+public,professional_patients
+public,professionals
+public,profiles
+public,workflow_runs
+(15 rows)

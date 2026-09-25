@@ -2,10 +2,15 @@
   "name": "Flow-CLN-04_GenerarBorradorIA",
   "nodes": [
     {
-      "parameters": { "inputSource": "passthrough" },
+      "parameters": {
+        "inputSource": "passthrough"
+      },
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [-1984, 192],
+      "position": [
+        -2200,
+        120
+      ],
       "id": "cln04-trigger",
       "name": "When Executed by Another Workflow"
     },
@@ -13,136 +18,477 @@
       "parameters": {},
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [-1984, 384],
+      "position": [
+        -2200,
+        420
+      ],
       "id": "cln04-manual",
       "name": "Manual Test"
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json ?? {};\nreturn [{ json: { context_id: input.context_id || input.clinical_case_context_id || input.entity_id || null, clinical_task_id: input.clinical_task_id || input.task_id || null, patient_id: input.patient_id || null, source_alert_id: input.source_alert_id || null, source_event_id: input.source_event_id || null, source_channel: input.source_channel || 'n8n' } }];"
+        "tableId": "clinical_tasks",
+        "operation": "getAll",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending_review"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1980,
+        420
+      ],
+      "id": "cln04-manual-task",
+      "name": "Manual Test - Get Pending Task",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const task = $input.first()?.json ?? {};\n\nif (!task.id) {\n  throw new Error(\n    'Manual Test: no se encontró una tarea clinical_tasks con status=pending_review.'\n  );\n}\n\nreturn [{\n  json: {\n    clinical_task_id: task.id,\n    patient_id: task.patient_id || null,\n    source_alert_id: task.source_alert_id || null,\n    source_event_id: task.source_event_id || task.event_id || null,\n    source_channel: 'n8n',\n    force_generate: true,\n    ollama_base_url: 'http://ollama:11434',\n    ollama_model: 'gpt-oss:20b'\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-1760, 288],
+      "position": [
+        -1760,
+        420
+      ],
+      "id": "cln04-manual-prepare",
+      "name": "Manual Test - Prepare Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first()?.json ?? {};\n\nfunction norm(value) {\n  if (value === undefined || value === null) return null;\n  const text = String(value).trim();\n  if (!text || ['null', 'undefined'].includes(text.toLowerCase())) return null;\n  return text;\n}\n\nconst clinicalTaskId = norm(input.clinical_task_id || input.task_id);\nconst uuidRegex =\n  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\n\nif (!clinicalTaskId) {\n  throw new Error('Flow-CLN-04 requiere clinical_task_id.');\n}\n\nif (!uuidRegex.test(clinicalTaskId)) {\n  throw new Error(\n    `clinical_task_id inválido: \"${clinicalTaskId}\". Se esperaba UUID de clinical_tasks.id.`\n  );\n}\n\nreturn [{\n  json: {\n    clinical_task_id: clinicalTaskId,\n    patient_id: norm(input.patient_id),\n    source_alert_id: norm(input.source_alert_id),\n    source_event_id: norm(input.source_event_id),\n    source_channel: norm(input.source_channel) || 'n8n',\n    force_generate: Boolean(input.force_generate),\n    ollama_base_url: (norm(input.ollama_base_url) || 'http://ollama:11434').replace(/\\/+$/, ''),\n    ollama_model: norm(input.ollama_model) || 'gpt-oss:20b'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1540,
+        220
+      ],
       "id": "cln04-normalize",
       "name": "Normalize AI Draft Trigger"
     },
     {
       "parameters": {
         "tableId": "workflow_runs",
-        "fieldsUi": { "fieldValues": [
-          { "fieldId": "workflow_key", "fieldValue": "Flow-CLN-04_GenerarBorradorIA" },
-          { "fieldId": "workflow_name", "fieldValue": "Flow-CLN-04_GenerarBorradorIA" },
-          { "fieldId": "workflow_version", "fieldValue": "1.0.0" },
-          { "fieldId": "n8n_execution_id", "fieldValue": "={{ $execution.id }}" },
-          { "fieldId": "status", "fieldValue": "running" },
-          { "fieldId": "trigger_event_id", "fieldValue": "={{ $json.source_event_id || null }}" },
-          { "fieldId": "input_payload", "fieldValue": "={{ $json }}" }
-        ] }
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "workflow_key",
+              "fieldValue": "Flow-CLN-04_GenerarBorradorIA"
+            },
+            {
+              "fieldId": "workflow_name",
+              "fieldValue": "Flow-CLN-04_GenerarBorradorIA"
+            },
+            {
+              "fieldId": "workflow_version",
+              "fieldValue": "2.0.0-schema-real"
+            },
+            {
+              "fieldId": "n8n_execution_id",
+              "fieldValue": "={{ $execution.id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "running"
+            },
+            {
+              "fieldId": "trigger_event_id",
+              "fieldValue": "={{ $('Normalize AI Draft Trigger').first().json.source_event_id || null }}"
+            },
+            {
+              "fieldId": "input_payload",
+              "fieldValue": "={{ $('Normalize AI Draft Trigger').first().json }}"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [-1536, 288],
+      "position": [
+        -1320,
+        220
+      ],
       "id": "cln04-run",
       "name": "Create CLN04 Workflow Run",
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
     },
     {
       "parameters": {
+        "tableId": "clinical_tasks",
         "operation": "getAll",
-        "tableId": "clinical_case_contexts",
         "limit": 1,
         "matchType": "allFilters",
-        "filters": { "conditions": [ { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Normalize AI Draft Trigger').first().json.context_id }}" } ] }
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize AI Draft Trigger').first().json.clinical_task_id }}"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [-1312, 288],
-      "id": "cln04-context",
-      "name": "Get Clinical Case Context",
-      "alwaysOutputData": true,
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
+      "position": [
+        -1100,
+        220
+      ],
+      "id": "cln04-get-task",
+      "name": "Get Clinical Task",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
-        "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 }, "conditions": [ { "id": "cln04-context-exists", "leftValue": "={{ !!$json.id && !!$json.clinical_task_id }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } } ], "combinator": "and" },
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cln04-if-task-condition",
+              "leftValue": "={{ !!$json.id && !!$json.patient_id }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
         "options": {}
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [-1088, 288],
-      "id": "cln04-if-context",
-      "name": "IF Context Has Clinical Task"
+      "position": [
+        -880,
+        220
+      ],
+      "id": "cln04-if-task",
+      "name": "IF Clinical Task Exists"
     },
     {
       "parameters": {
+        "tableId": "patient_histories",
         "operation": "getAll",
-        "tableId": "clinical_task_drafts",
         "limit": 1,
         "matchType": "allFilters",
-        "filters": { "conditions": [ { "keyName": "clinical_task_id", "condition": "eq", "keyValue": "={{ $('Get Clinical Case Context').first().json.clinical_task_id }}" } ] }
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "patient_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Clinical Task').first().json.patient_id }}"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [-864, 192],
-      "id": "cln04-existing",
-      "name": "Get Existing AI Draft",
-      "alwaysOutputData": true,
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
+      "position": [
+        -660,
+        40
+      ],
+      "id": "cln04-history",
+      "name": "Get Patient History",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "const trigger = $('Normalize AI Draft Trigger').first().json;\nconst context = $('Get Clinical Case Context').first().json;\nconst existing = $('Get Existing AI Draft').first()?.json ?? {};\nconst reusable = ['generated', 'edited', 'approved'].includes(existing.status);\nreturn [{ json: { ...trigger, context_id: context.id, clinical_task_id: context.clinical_task_id, patient_id: context.patient_id, existing_draft_id: existing.id || null, existing_draft_status: existing.status || null, should_generate: !reusable } }];"
+        "tableId": "glucose_readings",
+        "operation": "getAll",
+        "limit": 100,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "patient_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Clinical Task').first().json.patient_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        40
+      ],
+      "id": "cln04-readings",
+      "name": "Get Glucose Readings",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { continue: true } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-640, 192],
-      "id": "cln04-should-generate",
+      "position": [
+        -220,
+        40
+      ],
+      "id": "cln04-collapse-readings",
+      "name": "Collapse Glucose Readings"
+    },
+    {
+      "parameters": {
+        "tableId": "glucose_daily_context",
+        "operation": "getAll",
+        "limit": 30,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "patient_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Clinical Task').first().json.patient_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        0,
+        40
+      ],
+      "id": "cln04-daily",
+      "name": "Get Daily Context",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { continue: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        40
+      ],
+      "id": "cln04-collapse-daily",
+      "name": "Collapse Daily Context"
+    },
+    {
+      "parameters": {
+        "tableId": "adherence_summary",
+        "operation": "getAll",
+        "limit": 20,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "patient_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Clinical Task').first().json.patient_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        440,
+        40
+      ],
+      "id": "cln04-adherence",
+      "name": "Get Adherence Summary",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { continue: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        40
+      ],
+      "id": "cln04-collapse-adherence",
+      "name": "Collapse Adherence Summary"
+    },
+    {
+      "parameters": {
+        "tableId": "alerts",
+        "operation": "getAll",
+        "limit": 30,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "patient_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Clinical Task').first().json.patient_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        880,
+        40
+      ],
+      "id": "cln04-alerts",
+      "name": "Get Patient Alerts",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { continue: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        40
+      ],
+      "id": "cln04-collapse-alerts",
+      "name": "Collapse Patient Alerts"
+    },
+    {
+      "parameters": {
+        "jsCode": "const trigger = $('Normalize AI Draft Trigger').first().json;\nconst task = $('Get Clinical Task').first()?.json ?? {};\nconst historyRow = $('Get Patient History').first()?.json ?? {};\n\nif (!task.id || !task.patient_id) {\n  throw new Error('No se pudo recuperar la tarea clínica solicitada.');\n}\n\nconst history = historyRow?.data && typeof historyRow.data === 'object'\n  ? historyRow.data\n  : {};\n\nconst safeHistory = {\n  diabetesType: history.diabetesType ?? null,\n  diagnosisYear: history.diagnosisYear ?? null,\n  conditionsStatus: history.conditionsStatus ?? null,\n  conditions: Array.isArray(history.conditions) ? history.conditions : [],\n  severeLowHistory: history.severeLowHistory ?? null,\n  treatmentStatus: history.treatmentStatus ?? null,\n  medications: Array.isArray(history.medications)\n    ? history.medications.map((m) => ({\n        name: m?.name ?? null,\n        dose: m?.dose ?? null,\n        schedule: m?.schedule ?? null\n      }))\n    : [],\n  allergyStatus: history.allergyStatus ?? null,\n  allergies: history.allergies ?? null,\n  activity: history.activity ?? null,\n  notes: history.notes ?? null\n};\n\nconst readings = $('Get Glucose Readings').all()\n  .map((i) => i.json)\n  .filter((r) => r?.id)\n  .sort((a, b) => new Date(b.measured_at || 0) - new Date(a.measured_at || 0))\n  .slice(0, 20)\n  .map((r) => ({\n    id: r.id,\n    glucose_value: r.glucose_value,\n    unit: r.unit,\n    measurement_context: r.measurement_context,\n    measured_at: r.measured_at,\n    measurement_source: r.measurement_source,\n    has_eaten: r.has_eaten,\n    meal_type: r.meal_type,\n    carbohydrate_estimate: r.carbohydrate_estimate,\n    treatment_due_before_measurement: r.treatment_due_before_measurement,\n    treatment_taken_as_scheduled: r.treatment_taken_as_scheduled,\n    recent_physical_activity: r.recent_physical_activity,\n    activity_duration_min: r.activity_duration_min,\n    activity_intensity: r.activity_intensity,\n    symptoms_present: r.symptoms_present,\n    symptoms: r.symptoms,\n    illness_flag: r.illness_flag,\n    stress_flag: r.stress_flag,\n    sleep_quality: r.sleep_quality,\n    observation: r.observation,\n    quality_state: r.quality_state\n  }));\n\nconst dailyContext = $('Get Daily Context').all()\n  .map((i) => i.json)\n  .filter((r) => r?.id)\n  .sort((a, b) => String(b.local_date || '').localeCompare(String(a.local_date || '')))\n  .slice(0, 7)\n  .map((r) => ({\n    local_date: r.local_date,\n    treatment_adherence_24h: r.treatment_adherence_24h,\n    missed_doses_7d: r.missed_doses_7d,\n    missed_dose_reason: r.missed_dose_reason,\n    illness_flag: r.illness_flag,\n    stress_flag: r.stress_flag,\n    sleep_quality: r.sleep_quality\n  }));\n\nconst adherence = $('Get Adherence Summary').all()\n  .map((i) => i.json)\n  .filter((r) => r?.id)\n  .sort((a, b) => String(b.period_end_date || '').localeCompare(String(a.period_end_date || '')))\n  .slice(0, 6)\n  .map((r) => ({\n    window_days: r.window_days,\n    period_end_date: r.period_end_date,\n    days_with_reading: r.days_with_reading,\n    total_readings: r.total_readings,\n    adherence_pct: r.adherence_pct,\n    readings_per_week: r.readings_per_week,\n    max_gap_days: r.max_gap_days,\n    days_since_last_reading: r.days_since_last_reading,\n    abandoned_flag: r.abandoned_flag,\n    completeness_pct: r.completeness_pct,\n    slot_coverage_pct: r.slot_coverage_pct\n  }));\n\nconst alerts = $('Get Patient Alerts').all()\n  .map((i) => i.json)\n  .filter((r) => r?.id)\n  .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))\n  .slice(0, 10)\n  .map((r) => ({\n    id: r.id,\n    alert_type: r.alert_type,\n    severity: r.severity,\n    status: r.status,\n    reason: r.reason,\n    created_at: r.created_at\n  }));\n\nconst sourceRegistry = [\n  { source_key: 'TASK', description: 'Tarea clínica actual (clinical_tasks).' },\n  ...(historyRow?.patient_id ? [{ source_key: 'HISTORY', description: 'Historia del paciente minimizada (patient_histories).' }] : []),\n  ...(readings.length ? [{ source_key: 'READINGS', description: 'Lecturas recientes de glucosa (glucose_readings).' }] : []),\n  ...(dailyContext.length ? [{ source_key: 'DAILY_CONTEXT', description: 'Contexto diario reciente (glucose_daily_context).' }] : []),\n  ...(adherence.length ? [{ source_key: 'ADHERENCE', description: 'Resumen de adherencia (adherence_summary).' }] : []),\n  ...(alerts.length ? [{ source_key: 'ALERTS', description: 'Alertas recientes (alerts).' }] : [])\n];\n\nreturn [{\n  json: {\n    ...trigger,\n    clinical_task_id: task.id,\n    patient_id: task.patient_id,\n    task,\n    patient_history: safeHistory,\n    glucose_readings: readings,\n    daily_context: dailyContext,\n    adherence_summary: adherence,\n    alerts,\n    source_registry: sourceRegistry\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        40
+      ],
+      "id": "cln04-build-context",
+      "name": "Build Clinical Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $input.first().json;\nconst task = context.task || {};\nconst force = Boolean(context.force_generate);\n\nif (task.status === 'closed') {\n  return [{ json: { ...context, should_generate: false, skip_reason: 'task_closed' } }];\n}\n\nconst reusable = ['generated', 'approved', 'edited'].includes(task.ai_draft_status);\n\nreturn [{\n  json: {\n    ...context,\n    should_generate: force || !reusable,\n    skip_reason: (!force && reusable) ? 'current_draft_exists' : null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        40
+      ],
+      "id": "cln04-decide",
       "name": "Decide Whether To Generate"
     },
     {
       "parameters": {
-        "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 }, "conditions": [ { "id": "cln04-should-generate", "leftValue": "={{ $json.should_generate }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } } ], "combinator": "and" },
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cln04-if-generate-condition",
+              "leftValue": "={{ $json.should_generate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
         "options": {}
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [-416, 192],
+      "position": [
+        1760,
+        40
+      ],
       "id": "cln04-if-generate",
       "name": "IF New AI Draft Needed"
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "clinical_guideline_sources",
-        "limit": 20,
-        "matchType": "allFilters",
-        "filters": { "conditions": [ { "keyName": "active", "condition": "eq", "keyValue": "true" } ] }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [-192, 96],
-      "id": "cln04-sources",
-      "name": "Get Approved Clinical Sources",
-      "alwaysOutputData": true,
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
-    },
-    {
-      "parameters": {
-        "jsCode": "const context = $('Get Clinical Case Context').first().json;\nconst sources = $('Get Approved Clinical Sources').all().map((item) => item.json).filter((source) => source?.source_key);\nconst sourceRegistry = sources.map((source) => ({ source_key: source.source_key, title: source.title, organization: source.organization, version_label: source.version_label, url: source.url, evidence_scope: source.evidence_scope }));\nconst snapshot = context.snapshot && typeof context.snapshot === 'object' ? context.snapshot : {};\nconst systemPrompt = `Eres un asistente de apoyo para profesionales que revisan alertas de seguimiento de glucosa. Genera un BORRADOR para que un profesional lo revise y edite.\n\nReglas obligatorias:\n- No diagnostiques, no prescribas, no cambies medicamentos, no indiques dosis y no envíes mensajes al paciente.\n- Describe hechos del contexto y separa observaciones de preguntas pendientes.\n- Si faltan datos, dilo de forma explícita y evita completar con suposiciones.\n- Las acciones sugeridas deben ser pasos de revisión profesional, como verificar síntomas, confirmar contexto de la lectura o consultar la historia, nunca decisiones terapéuticas automáticas.\n- Usa únicamente las fuentes del registro que sean pertinentes y cita sus source_key; no inventes fuentes.\n- La salida debe estar en español y respetar exactamente el esquema JSON solicitado.`;\nconst schema = { type: 'object', additionalProperties: false, properties: { draft_text: { type: 'string' }, summary: { type: 'string' }, observations: { type: 'array', items: { type: 'string' } }, pending_questions: { type: 'array', items: { type: 'string' } }, suggested_review_actions: { type: 'array', items: { type: 'string' } }, safety_flags: { type: 'array', items: { type: 'string' } }, source_citations: { type: 'array', items: { type: 'string' } } }, required: ['draft_text', 'summary', 'observations', 'pending_questions', 'suggested_review_actions', 'safety_flags', 'source_citations'] };\nconst request_body = { model: 'gpt-4o-mini', temperature: 0.2, input: [{ role: 'system', content: [{ type: 'input_text', text: systemPrompt }] }, { role: 'user', content: [{ type: 'input_text', text: JSON.stringify({ clinical_task_id: context.clinical_task_id, patient_id: context.patient_id, context_status: context.status, missing_data: context.missing_data, snapshot, source_registry }) }] }], text: { format: { type: 'json_schema', name: 'clinical_support_draft', strict: true, schema } } };\nreturn [{ json: { ...$('Decide Whether To Generate').first().json, prompt_version: 'clinical-support-v1', model: 'gpt-4o-mini', source_registry: sourceRegistry, request_body } }];"
+        "jsCode": "const context = $('Decide Whether To Generate').first().json;\nconst runtime = $('Normalize AI Draft Trigger').first().json;\nconst ollamaBaseUrl = runtime.ollama_base_url || 'http://ollama:11434';\nconst ollamaModel = runtime.ollama_model || 'gpt-oss:20b';\n\nconst systemPrompt = `Eres un asistente de apoyo para un profesional de salud que revisa una tarea de seguimiento ambulatorio de diabetes.\n\nGenera únicamente un BORRADOR para revisión profesional.\n\nReglas obligatorias:\n- No diagnostiques.\n- No prescribas.\n- No cambies medicamentos ni indiques dosis.\n- No emitas una instrucción final al paciente.\n- No inventes datos, síntomas, antecedentes, fuentes ni guías.\n- Usa exclusivamente los datos incluidos en el contexto.\n- Si falta información, decláralo explícitamente.\n- Separa hechos observados, preguntas pendientes y acciones de revisión profesional.\n- Las acciones sugeridas deben ser acciones de verificación/revisión humana, no decisiones terapéuticas automáticas.\n- source_citations solo puede contener source_key del source_registry proporcionado. Estas claves representan procedencia de datos internos, no referencias bibliográficas.\n- La salida debe estar en español.\n- Devuelve únicamente JSON válido, sin Markdown ni texto adicional.`;\n\nconst schema = {\n  type: 'object',\n  additionalProperties: false,\n  properties: {\n    draft_text: { type: 'string' },\n    summary: { type: 'string' },\n    observations: { type: 'array', items: { type: 'string' } },\n    pending_questions: { type: 'array', items: { type: 'string' } },\n    suggested_review_actions: { type: 'array', items: { type: 'string' } },\n    safety_flags: { type: 'array', items: { type: 'string' } },\n    source_citations: { type: 'array', items: { type: 'string' } }\n  },\n  required: [\n    'draft_text',\n    'summary',\n    'observations',\n    'pending_questions',\n    'suggested_review_actions',\n    'safety_flags',\n    'source_citations'\n  ]\n};\n\nconst payload = {\n  clinical_task: {\n    id: context.task.id,\n    trigger_rule: context.task.trigger_rule,\n    priority: context.task.priority,\n    status: context.task.status,\n    source_alert_id: context.task.source_alert_id,\n    created_at: context.task.created_at\n  },\n  patient_history: context.patient_history,\n  glucose_readings: context.glucose_readings,\n  daily_context: context.daily_context,\n  adherence_summary: context.adherence_summary,\n  alerts: context.alerts,\n  source_registry: context.source_registry\n};\n\nconst request_body = {\n  model: ollamaModel,\n  messages: [\n    { role: 'system', content: systemPrompt },\n    { role: 'user', content: JSON.stringify(payload) }\n  ],\n  stream: false,\n  format: schema,\n  options: { temperature: 0.2 }\n};\n\nreturn [{\n  json: {\n    ...context,\n    prompt_version: 'clinical-support-db-v2',\n    provider: 'ollama',\n    model: ollamaModel,\n    ollama_base_url: ollamaBaseUrl,\n    request_body\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [32, 96],
+      "position": [
+        1980,
+        -80
+      ],
       "id": "cln04-prompt",
       "name": "Build Grounded Clinical Prompt"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.openai.com/v1/responses",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpHeaderAuth",
+        "url": "={{ $json.ollama_base_url + '/api/chat' }}",
         "sendHeaders": true,
         "specifyHeaders": "json",
         "jsonHeaders": "{\"Content-Type\":\"application/json\"}",
@@ -150,263 +496,844 @@
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify($json.request_body) }}",
-        "options": { "response": { "response": { "neverError": true } }, "timeout": 60000 }
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 180000
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [256, 96],
-      "id": "cln04-openai",
-      "name": "OpenAI Responses - Structured Output",
-      "credentials": { "httpHeaderAuth": { "id": "OPENAI_N8N_CREDENTIAL_ID", "name": "OpenAI API Header" } }
+      "position": [
+        2200,
+        -80
+      ],
+      "id": "cln04-ollama",
+      "name": "Ollama Chat - Structured Output"
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first()?.json ?? {};\nconst statusCode = Number(response.statusCode ?? response.status ?? 200);\nconst body = response.body && typeof response.body === 'object' ? response.body : response;\nconst outputText = body.output_text || body.output?.flatMap((item) => item.content || []).find((content) => content.type === 'output_text')?.text || null;\nconst base = $('Build Grounded Clinical Prompt').first().json;\nif (statusCode >= 400 || !outputText) return [{ json: { ...base, ai_ok: false, error_message: body.error?.message || `OpenAI respondió ${statusCode} sin contenido estructurado.` } }];\nlet parsed;\ntry { parsed = JSON.parse(outputText); } catch { return [{ json: { ...base, ai_ok: false, error_message: 'La respuesta de OpenAI no se pudo interpretar como JSON.' } }]; }\nconst arrays = ['observations', 'pending_questions', 'suggested_review_actions', 'safety_flags', 'source_citations'];\nif (typeof parsed.draft_text !== 'string' || !parsed.draft_text.trim() || typeof parsed.summary !== 'string' || arrays.some((key) => !Array.isArray(parsed[key]))) return [{ json: { ...base, ai_ok: false, error_message: 'La salida estructurada no cumple el contrato del borrador clínico.' } }];\nconst allowed = new Set((base.source_registry || []).map((source) => source.source_key));\nconst sourceKeys = parsed.source_citations.filter((key) => typeof key === 'string' && allowed.has(key));\nreturn [{ json: { ...base, ai_ok: true, draft_text: parsed.draft_text.trim(), structured_output: parsed, source_keys: sourceKeys, generated_at: new Date().toISOString() } }];"
+        "jsCode": "const response = $input.first()?.json ?? {};\nconst statusCode = Number(response.statusCode ?? response.status ?? 200);\nconst body = response.body && typeof response.body === 'object'\n  ? response.body\n  : response;\n\nconst outputText = body.message?.content || body.response || null;\nconst base = $('Build Grounded Clinical Prompt').first().json;\n\nif (statusCode >= 400 || !outputText) {\n  const err = body.error?.message || body.error ||\n    `Ollama respondió ${statusCode} sin contenido estructurado.`;\n  return [{ json: { ...base, ai_ok: false, error_message: String(err) } }];\n}\n\nlet parsed;\ntry {\n  parsed = typeof outputText === 'string' ? JSON.parse(outputText) : outputText;\n} catch {\n  return [{\n    json: {\n      ...base,\n      ai_ok: false,\n      error_message: 'La respuesta de Ollama no se pudo interpretar como JSON.'\n    }\n  }];\n}\n\nconst arrays = [\n  'observations',\n  'pending_questions',\n  'suggested_review_actions',\n  'safety_flags',\n  'source_citations'\n];\n\nif (\n  typeof parsed.draft_text !== 'string' ||\n  !parsed.draft_text.trim() ||\n  typeof parsed.summary !== 'string' ||\n  arrays.some((key) => !Array.isArray(parsed[key]))\n) {\n  return [{\n    json: {\n      ...base,\n      ai_ok: false,\n      error_message: 'La salida estructurada de Ollama no cumple el contrato del borrador clínico.'\n    }\n  }];\n}\n\nconst allowed = new Set((base.source_registry || []).map((s) => s.source_key));\nconst sourceKeys = parsed.source_citations.filter(\n  (key) => typeof key === 'string' && allowed.has(key)\n);\n\nreturn [{\n  json: {\n    ...base,\n    ai_ok: true,\n    draft_text: parsed.draft_text.trim(),\n    structured_output: parsed,\n    source_keys: sourceKeys,\n    generated_at: new Date().toISOString()\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 96],
+      "position": [
+        2420,
+        -80
+      ],
       "id": "cln04-parse",
       "name": "Validate Structured AI Draft"
     },
     {
       "parameters": {
-        "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 }, "conditions": [ { "id": "cln04-ai-ok", "leftValue": "={{ $json.ai_ok }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } } ], "combinator": "and" },
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cln04-if-ai-condition",
+              "leftValue": "={{ $json.ai_ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
         "options": {}
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [704, 96],
-      "id": "cln04-if-ai-ok",
+      "position": [
+        2640,
+        -80
+      ],
+      "id": "cln04-if-ai",
       "name": "IF AI Draft Valid"
     },
     {
       "parameters": {
-        "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 }, "conditions": [ { "id": "cln04-existing-update", "leftValue": "={{ !!$json.existing_draft_id }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } } ], "combinator": "and" },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [928, -256],
-      "id": "cln04-if-existing-update",
-      "name": "IF Existing Draft For Update"
-    },
-    {
-      "parameters": {
-        "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 }, "conditions": [ { "id": "cln04-existing-failure", "leftValue": "={{ !!$json.existing_draft_id }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } } ], "combinator": "and" },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [928, 256],
-      "id": "cln04-if-existing-failure",
-      "name": "IF Existing Draft For Failure"
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "tableId": "clinical_task_drafts",
-        "filters": { "conditions": [ { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.existing_draft_id }}" } ] },
-        "fieldsUi": { "fieldValues": [
-          { "fieldId": "clinical_case_context_id", "fieldValue": "={{ $json.context_id }}" },
-          { "fieldId": "patient_id", "fieldValue": "={{ $json.patient_id }}" },
-          { "fieldId": "status", "fieldValue": "generated" },
-          { "fieldId": "draft_text", "fieldValue": "={{ $json.draft_text }}" },
-          { "fieldId": "structured_output", "fieldValue": "={{ $json.structured_output }}" },
-          { "fieldId": "source_keys", "fieldValue": "={{ $json.source_keys }}" },
-          { "fieldId": "model", "fieldValue": "={{ $json.model }}" },
-          { "fieldId": "provider", "fieldValue": "openai" },
-          { "fieldId": "prompt_version", "fieldValue": "={{ $json.prompt_version }}" },
-          { "fieldId": "workflow_run_id", "fieldValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}" },
-          { "fieldId": "error_message", "fieldValue": "" },
-          { "fieldId": "generated_at", "fieldValue": "={{ $json.generated_at }}" },
-          { "fieldId": "reviewed_by_professional_id", "fieldValue": null },
-          { "fieldId": "reviewed_at", "fieldValue": null },
-          { "fieldId": "review_note", "fieldValue": null }
-        ] }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [928, -32],
-      "id": "cln04-update-draft",
-      "name": "Update Existing AI Draft",
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
-    },
-    {
-      "parameters": {
-        "tableId": "clinical_task_drafts",
-        "fieldsUi": { "fieldValues": [
-          { "fieldId": "clinical_task_id", "fieldValue": "={{ $json.clinical_task_id }}" },
-          { "fieldId": "clinical_case_context_id", "fieldValue": "={{ $json.context_id }}" },
-          { "fieldId": "patient_id", "fieldValue": "={{ $json.patient_id }}" },
-          { "fieldId": "status", "fieldValue": "generated" },
-          { "fieldId": "draft_text", "fieldValue": "={{ $json.draft_text }}" },
-          { "fieldId": "structured_output", "fieldValue": "={{ $json.structured_output }}" },
-          { "fieldId": "source_keys", "fieldValue": "={{ $json.source_keys }}" },
-          { "fieldId": "model", "fieldValue": "={{ $json.model }}" },
-          { "fieldId": "provider", "fieldValue": "openai" },
-          { "fieldId": "prompt_version", "fieldValue": "={{ $json.prompt_version }}" },
-          { "fieldId": "workflow_run_id", "fieldValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}" },
-          { "fieldId": "generated_at", "fieldValue": "={{ $json.generated_at }}" }
-        ] }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [928, 160],
-      "id": "cln04-create-draft",
-      "name": "Create AI Draft",
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
-    },
-    {
-      "parameters": {
-        "operation": "update",
         "tableId": "clinical_tasks",
-        "filters": { "conditions": [ { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.clinical_task_id }}" } ] },
-        "fieldsUi": { "fieldValues": [ { "fieldId": "ai_draft_status", "fieldValue": "generated" }, { "fieldId": "status", "fieldValue": "draft_ready" } ] }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1152, 64],
-      "id": "cln04-mark-generated",
-      "name": "Mark Task Draft Ready",
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
-    },
-    {
-      "parameters": {
         "operation": "update",
-        "tableId": "clinical_task_drafts",
-        "filters": { "conditions": [ { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.existing_draft_id }}" } ] },
-        "fieldsUi": { "fieldValues": [ { "fieldId": "status", "fieldValue": "failed" }, { "fieldId": "error_message", "fieldValue": "={{ $json.error_message }}" }, { "fieldId": "workflow_run_id", "fieldValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}" } ] }
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Validate Structured AI Draft').first().json.clinical_task_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "ai_draft_status",
+              "fieldValue": "generated"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "draft_ready"
+            },
+            {
+              "fieldId": "ai_draft_text",
+              "fieldValue": "={{ $('Validate Structured AI Draft').first().json.draft_text }}"
+            },
+            {
+              "fieldId": "ai_draft_json",
+              "fieldValue": "={{ $('Validate Structured AI Draft').first().json.structured_output }}"
+            },
+            {
+              "fieldId": "ai_draft_model",
+              "fieldValue": "={{ $('Validate Structured AI Draft').first().json.model }}"
+            },
+            {
+              "fieldId": "ai_draft_generated_at",
+              "fieldValue": "={{ $('Validate Structured AI Draft').first().json.generated_at }}"
+            },
+            {
+              "fieldId": "ai_draft_error",
+              "fieldValue": ""
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [928, 352],
-      "id": "cln04-update-failed",
-      "name": "Update Failed AI Draft",
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
+      "position": [
+        2860,
+        -180
+      ],
+      "id": "cln04-save-draft",
+      "name": "Save AI Draft To Clinical Task",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
     },
     {
       "parameters": {
-        "tableId": "clinical_task_drafts",
-        "fieldsUi": { "fieldValues": [
-          { "fieldId": "clinical_task_id", "fieldValue": "={{ $json.clinical_task_id }}" },
-          { "fieldId": "clinical_case_context_id", "fieldValue": "={{ $json.context_id }}" },
-          { "fieldId": "patient_id", "fieldValue": "={{ $json.patient_id }}" },
-          { "fieldId": "status", "fieldValue": "failed" },
-          { "fieldId": "prompt_version", "fieldValue": "={{ $json.prompt_version || 'clinical-support-v1' }}" },
-          { "fieldId": "model", "fieldValue": "={{ $json.model || 'gpt-4o-mini' }}" },
-          { "fieldId": "provider", "fieldValue": "openai" },
-          { "fieldId": "workflow_run_id", "fieldValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}" },
-          { "fieldId": "error_message", "fieldValue": "={{ $json.error_message }}" }
-        ] }
+        "tableId": "events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('Validate Structured AI Draft').first().json.patient_id }}"
+            },
+            {
+              "fieldId": "event_type",
+              "fieldValue": "clinical_ai_draft_generated"
+            },
+            {
+              "fieldId": "entity_type",
+              "fieldValue": "clinical_task"
+            },
+            {
+              "fieldId": "entity_id",
+              "fieldValue": "={{ $('Validate Structured AI Draft').first().json.clinical_task_id }}"
+            },
+            {
+              "fieldId": "causation_event_id",
+              "fieldValue": "={{ $('Get Clinical Task').first().json.event_id || null }}"
+            },
+            {
+              "fieldId": "actor_type",
+              "fieldValue": "workflow"
+            },
+            {
+              "fieldId": "source_channel",
+              "fieldValue": "n8n"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}"
+            },
+            {
+              "fieldId": "previous_state",
+              "fieldValue": "={{ { ai_draft_status: $('Get Clinical Task').first().json.ai_draft_status, status: $('Get Clinical Task').first().json.status } }}"
+            },
+            {
+              "fieldId": "new_state",
+              "fieldValue": "={{ { ai_draft_status: 'generated', status: 'draft_ready' } }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { provider: $('Validate Structured AI Draft').first().json.provider, model: $('Validate Structured AI Draft').first().json.model, prompt_version: $('Validate Structured AI Draft').first().json.prompt_version, source_keys: $('Validate Structured AI Draft').first().json.source_keys } }}"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [928, 512],
-      "id": "cln04-create-failed",
-      "name": "Create Failed AI Draft",
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
+      "position": [
+        3080,
+        -180
+      ],
+      "id": "cln04-event-success",
+      "name": "Record AI Draft Generated Event",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "clinical_tasks",
-        "filters": { "conditions": [ { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.clinical_task_id }}" } ] },
-        "fieldsUi": { "fieldValues": [ { "fieldId": "ai_draft_status", "fieldValue": "failed" } ] }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1152, 432],
-      "id": "cln04-mark-failed",
-      "name": "Mark Task AI Draft Failed",
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
-    },
-    {
-      "parameters": {
-        "operation": "update",
         "tableId": "workflow_runs",
-        "filters": { "conditions": [ { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}" } ] },
-        "fieldsUi": { "fieldValues": [ { "fieldId": "status", "fieldValue": "succeeded" }, { "fieldId": "finished_at", "fieldValue": "={{ new Date().toISOString() }}" }, { "fieldId": "output_payload", "fieldValue": "={{ { ai_draft_status: 'generated', clinical_task_id: $json.clinical_task_id, draft_id: $json.id || null, prompt_version: $json.prompt_version } }}" } ] }
+        "operation": "update",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { ai_draft_status: 'generated', clinical_task_id: $('Validate Structured AI Draft').first().json.clinical_task_id, provider: $('Validate Structured AI Draft').first().json.provider, model: $('Validate Structured AI Draft').first().json.model, prompt_version: $('Validate Structured AI Draft').first().json.prompt_version, draft_text: $('Validate Structured AI Draft').first().json.draft_text, structured_output: $('Validate Structured AI Draft').first().json.structured_output, source_keys: $('Validate Structured AI Draft').first().json.source_keys, generated_at: $('Validate Structured AI Draft').first().json.generated_at } }}"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1376, 64],
+      "position": [
+        3300,
+        -180
+      ],
       "id": "cln04-close-success",
       "name": "Close CLN04 Run - Generated",
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
     },
     {
       "parameters": {
+        "tableId": "clinical_tasks",
         "operation": "update",
-        "tableId": "workflow_runs",
-        "filters": { "conditions": [ { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}" } ] },
-        "fieldsUi": { "fieldValues": [ { "fieldId": "status", "fieldValue": "failed" }, { "fieldId": "finished_at", "fieldValue": "={{ new Date().toISOString() }}" }, { "fieldId": "error_message", "fieldValue": "={{ $json.error_message || 'AI draft generation failed' }}" }, { "fieldId": "output_payload", "fieldValue": "={{ { ai_draft_status: 'failed', clinical_task_id: $json.clinical_task_id, error_message: $json.error_message } }}" } ] }
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Validate Structured AI Draft').first().json.clinical_task_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "ai_draft_status",
+              "fieldValue": "failed"
+            },
+            {
+              "fieldId": "ai_draft_error",
+              "fieldValue": "={{ $('Validate Structured AI Draft').first().json.error_message }}"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1376, 432],
+      "position": [
+        2860,
+        120
+      ],
+      "id": "cln04-save-failure",
+      "name": "Mark Clinical Task AI Draft Failed",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "events",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ $('Validate Structured AI Draft').first().json.patient_id }}"
+            },
+            {
+              "fieldId": "event_type",
+              "fieldValue": "clinical_ai_draft_failed"
+            },
+            {
+              "fieldId": "entity_type",
+              "fieldValue": "clinical_task"
+            },
+            {
+              "fieldId": "entity_id",
+              "fieldValue": "={{ $('Validate Structured AI Draft').first().json.clinical_task_id }}"
+            },
+            {
+              "fieldId": "causation_event_id",
+              "fieldValue": "={{ $('Get Clinical Task').first().json.event_id || null }}"
+            },
+            {
+              "fieldId": "actor_type",
+              "fieldValue": "workflow"
+            },
+            {
+              "fieldId": "source_channel",
+              "fieldValue": "n8n"
+            },
+            {
+              "fieldId": "workflow_run_id",
+              "fieldValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}"
+            },
+            {
+              "fieldId": "previous_state",
+              "fieldValue": "={{ { ai_draft_status: $('Get Clinical Task').first().json.ai_draft_status } }}"
+            },
+            {
+              "fieldId": "new_state",
+              "fieldValue": "={{ { ai_draft_status: 'failed' } }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { error_message: $('Validate Structured AI Draft').first().json.error_message, provider: $('Validate Structured AI Draft').first().json.provider, model: $('Validate Structured AI Draft').first().json.model, prompt_version: $('Validate Structured AI Draft').first().json.prompt_version } }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3080,
+        120
+      ],
+      "id": "cln04-event-failure",
+      "name": "Record AI Draft Failed Event",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "workflow_runs",
+        "operation": "update",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "failed"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "error_message",
+              "fieldValue": "={{ $('Validate Structured AI Draft').first().json.error_message || 'AI draft generation failed' }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { ai_draft_status: 'failed', clinical_task_id: $('Validate Structured AI Draft').first().json.clinical_task_id, error_message: $('Validate Structured AI Draft').first().json.error_message } }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        120
+      ],
       "id": "cln04-close-failed",
       "name": "Close CLN04 Run - Failed",
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
     },
     {
       "parameters": {
-        "operation": "update",
         "tableId": "workflow_runs",
-        "filters": { "conditions": [ { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}" } ] },
-        "fieldsUi": { "fieldValues": [ { "fieldId": "status", "fieldValue": "succeeded" }, { "fieldId": "finished_at", "fieldValue": "={{ new Date().toISOString() }}" }, { "fieldId": "output_payload", "fieldValue": "={{ { ai_draft_status: 'reused', clinical_task_id: $json.clinical_task_id, draft_id: $json.existing_draft_id, reason: 'current_draft_exists' } }}" } ] }
+        "operation": "update",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "succeeded"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { ai_draft_status: 'skipped', clinical_task_id: $('Decide Whether To Generate').first().json.clinical_task_id, reason: $('Decide Whether To Generate').first().json.skip_reason || 'draft_not_required' } }}"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [32, 288],
-      "id": "cln04-close-reused",
-      "name": "Close CLN04 Run - Existing Draft",
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
+      "position": [
+        1980,
+        180
+      ],
+      "id": "cln04-close-skipped",
+      "name": "Close CLN04 Run - Skipped",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
     },
     {
       "parameters": {
-        "operation": "update",
         "tableId": "workflow_runs",
-        "filters": { "conditions": [ { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}" } ] },
-        "fieldsUi": { "fieldValues": [ { "fieldId": "status", "fieldValue": "succeeded" }, { "fieldId": "finished_at", "fieldValue": "={{ new Date().toISOString() }}" }, { "fieldId": "output_payload", "fieldValue": "={{ { ai_draft_status: 'skipped', reason: 'context_without_clinical_task' } }}" } ] }
+        "operation": "update",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Create CLN04 Workflow Run').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "failed"
+            },
+            {
+              "fieldId": "finished_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "error_message",
+              "fieldValue": "clinical_task_id no encontrado"
+            },
+            {
+              "fieldId": "output_payload",
+              "fieldValue": "={{ { ai_draft_status: 'failed', reason: 'clinical_task_not_found', clinical_task_id: $('Normalize AI Draft Trigger').first().json.clinical_task_id } }}"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [-864, 512],
+      "position": [
+        -660,
+        340
+      ],
       "id": "cln04-close-no-task",
-      "name": "Close CLN04 Run - No Task",
-      "credentials": { "supabaseApi": { "id": "15MOY6FyWlWDp9v7", "name": "Supabase account" } }
+      "name": "Close CLN04 Run - Missing Task",
+      "credentials": {
+        "supabaseApi": {
+          "id": "15MOY6FyWlWDp9v7",
+          "name": "Supabase account"
+        }
+      }
     }
   ],
+  "pinData": {},
   "connections": {
-    "When Executed by Another Workflow": { "main": [[{ "node": "Normalize AI Draft Trigger", "type": "main", "index": 0 }]] },
-    "Manual Test": { "main": [[{ "node": "Normalize AI Draft Trigger", "type": "main", "index": 0 }]] },
-    "Normalize AI Draft Trigger": { "main": [[{ "node": "Create CLN04 Workflow Run", "type": "main", "index": 0 }]] },
-    "Create CLN04 Workflow Run": { "main": [[{ "node": "Get Clinical Case Context", "type": "main", "index": 0 }]] },
-    "Get Clinical Case Context": { "main": [[{ "node": "IF Context Has Clinical Task", "type": "main", "index": 0 }]] },
-    "IF Context Has Clinical Task": { "main": [[{ "node": "Get Existing AI Draft", "type": "main", "index": 0 }], [{ "node": "Close CLN04 Run - No Task", "type": "main", "index": 0 }]] },
-    "Get Existing AI Draft": { "main": [[{ "node": "Decide Whether To Generate", "type": "main", "index": 0 }]] },
-    "Decide Whether To Generate": { "main": [[{ "node": "IF New AI Draft Needed", "type": "main", "index": 0 }]] },
-    "IF New AI Draft Needed": { "main": [[{ "node": "Get Approved Clinical Sources", "type": "main", "index": 0 }], [{ "node": "Close CLN04 Run - Existing Draft", "type": "main", "index": 0 }]] },
-    "Get Approved Clinical Sources": { "main": [[{ "node": "Build Grounded Clinical Prompt", "type": "main", "index": 0 }]] },
-    "Build Grounded Clinical Prompt": { "main": [[{ "node": "OpenAI Responses - Structured Output", "type": "main", "index": 0 }]] },
-    "OpenAI Responses - Structured Output": { "main": [[{ "node": "Validate Structured AI Draft", "type": "main", "index": 0 }]] },
-    "Validate Structured AI Draft": { "main": [[{ "node": "IF AI Draft Valid", "type": "main", "index": 0 }]] },
-    "IF AI Draft Valid": { "main": [[{ "node": "IF Existing Draft For Update", "type": "main", "index": 0 }], [{ "node": "IF Existing Draft For Failure", "type": "main", "index": 0 }]] },
-    "IF Existing Draft For Update": { "main": [[{ "node": "Update Existing AI Draft", "type": "main", "index": 0 }], [{ "node": "Create AI Draft", "type": "main", "index": 0 }]] },
-    "Update Existing AI Draft": { "main": [[{ "node": "Mark Task Draft Ready", "type": "main", "index": 0 }]] },
-    "Create AI Draft": { "main": [[{ "node": "Mark Task Draft Ready", "type": "main", "index": 0 }]] },
-    "Mark Task Draft Ready": { "main": [[{ "node": "Close CLN04 Run - Generated", "type": "main", "index": 0 }]] },
-    "IF Existing Draft For Failure": { "main": [[{ "node": "Update Failed AI Draft", "type": "main", "index": 0 }], [{ "node": "Create Failed AI Draft", "type": "main", "index": 0 }]] },
-    "Update Failed AI Draft": { "main": [[{ "node": "Mark Task AI Draft Failed", "type": "main", "index": 0 }]] },
-    "Create Failed AI Draft": { "main": [[{ "node": "Mark Task AI Draft Failed", "type": "main", "index": 0 }]] },
-    "Mark Task AI Draft Failed": { "main": [[{ "node": "Close CLN04 Run - Failed", "type": "main", "index": 0 }]] }
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Normalize AI Draft Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Test": {
+      "main": [
+        [
+          {
+            "node": "Manual Test - Get Pending Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Test - Get Pending Task": {
+      "main": [
+        [
+          {
+            "node": "Manual Test - Prepare Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Test - Prepare Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize AI Draft Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize AI Draft Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create CLN04 Workflow Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create CLN04 Workflow Run": {
+      "main": [
+        [
+          {
+            "node": "Get Clinical Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Clinical Task": {
+      "main": [
+        [
+          {
+            "node": "IF Clinical Task Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Clinical Task Exists": {
+      "main": [
+        [
+          {
+            "node": "Get Patient History",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Close CLN04 Run - Missing Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Patient History": {
+      "main": [
+        [
+          {
+            "node": "Get Glucose Readings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Glucose Readings": {
+      "main": [
+        [
+          {
+            "node": "Collapse Glucose Readings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collapse Glucose Readings": {
+      "main": [
+        [
+          {
+            "node": "Get Daily Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Daily Context": {
+      "main": [
+        [
+          {
+            "node": "Collapse Daily Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collapse Daily Context": {
+      "main": [
+        [
+          {
+            "node": "Get Adherence Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Adherence Summary": {
+      "main": [
+        [
+          {
+            "node": "Collapse Adherence Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collapse Adherence Summary": {
+      "main": [
+        [
+          {
+            "node": "Get Patient Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Patient Alerts": {
+      "main": [
+        [
+          {
+            "node": "Collapse Patient Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collapse Patient Alerts": {
+      "main": [
+        [
+          {
+            "node": "Build Clinical Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Clinical Context": {
+      "main": [
+        [
+          {
+            "node": "Decide Whether To Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Whether To Generate": {
+      "main": [
+        [
+          {
+            "node": "IF New AI Draft Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF New AI Draft Needed": {
+      "main": [
+        [
+          {
+            "node": "Build Grounded Clinical Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Close CLN04 Run - Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Grounded Clinical Prompt": {
+      "main": [
+        [
+          {
+            "node": "Ollama Chat - Structured Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat - Structured Output": {
+      "main": [
+        [
+          {
+            "node": "Validate Structured AI Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Structured AI Draft": {
+      "main": [
+        [
+          {
+            "node": "IF AI Draft Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF AI Draft Valid": {
+      "main": [
+        [
+          {
+            "node": "Save AI Draft To Clinical Task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Clinical Task AI Draft Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save AI Draft To Clinical Task": {
+      "main": [
+        [
+          {
+            "node": "Record AI Draft Generated Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record AI Draft Generated Event": {
+      "main": [
+        [
+          {
+            "node": "Close CLN04 Run - Generated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Clinical Task AI Draft Failed": {
+      "main": [
+        [
+          {
+            "node": "Record AI Draft Failed Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record AI Draft Failed Event": {
+      "main": [
+        [
+          {
+            "node": "Close CLN04 Run - Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1", "binaryMode": "separate" },
-  "versionId": "cln04-v1",
-  "meta": { "instanceId": "0d2cd94368d1529af8272aa69d8382380c81a77cb395fbe48cc01cea4f06e2f" },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "cln04-v2-schema-real-ollama",
+  "meta": {
+    "instanceId": "0d2cd94368d1529af8272aa69d8382380c81a77cb395fbe48cc01cea4f06e2f"
+  },
   "nodeGroups": [],
-  "id": "CLN04TrackyGlu01",
+  "id": "CLN04TrackyGluSchemaReal01",
   "tags": []
 }

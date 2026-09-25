@@ -24,7 +24,10 @@ function getSupabasePublicKey(): string {
   return value
 }
 
-const supabaseUrl = getRequiredEnv('VITE_SUPABASE_URL')
+const supabaseUrl =
+  import.meta.env.PROD && typeof window !== 'undefined'
+    ? window.location.origin
+    : getRequiredEnv('VITE_SUPABASE_URL')
 const supabasePublicKey = getSupabasePublicKey()
 
 export const supabase = createClient(supabaseUrl, supabasePublicKey, {
