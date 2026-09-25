@@ -27,4 +27,10 @@ function getSupabasePublicKey(): string {
 const supabaseUrl = getRequiredEnv('VITE_SUPABASE_URL')
 const supabasePublicKey = getSupabasePublicKey()
 
-export const supabase = createClient(supabaseUrl, supabasePublicKey)
+export const supabase = createClient(supabaseUrl, supabasePublicKey, {
+  global: {
+    headers: {
+      'ngrok-skip-browser-warning': 'true',
+    },
+  },
+})
